@@ -10,7 +10,6 @@ import { ThemeContext } from './theme-provider'
 
 const homePages = [
   { name: 'Stays', slug: '/' },
-  { name: 'Real Estates', slug: '/real-estate' },
   { name: 'Experiences', slug: '/experience' },
   { name: 'Cars', slug: '/car' },
   { name: 'Flights', slug: '/flight-categories/all' },

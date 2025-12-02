@@ -10,35 +10,18 @@ import { usePathname } from 'next/navigation'
 
 const solutions = [
   {
-    name: T['Header']['DropdownTravelers']['Stays'],
-    description: T['Header']['DropdownTravelers']['stayDescription'],
+    name: T['Header']['DropdownTravelers']['Client'],
+    description: T['Header']['DropdownTravelers']['clientDescription'],
     href: '/',
     icon: House04Icon,
   },
   {
-    name: T['Header']['DropdownTravelers']['Real Estate'],
-    description: T['Header']['DropdownTravelers']['estateDescription'],
+    name: T['Header']['DropdownTravelers']['Mover'],
+    description: T['Header']['DropdownTravelers']['moverDescription'],
     href: '/real-estate',
     icon: Building03Icon,
   },
-  {
-    name: T['Header']['DropdownTravelers']['Cars'],
-    description: T['Header']['DropdownTravelers']['carDescription'],
-    href: '/car',
-    icon: Car03Icon,
-  },
-  {
-    name: T['Header']['DropdownTravelers']['Experiences'],
-    description: T['Header']['DropdownTravelers']['experienceDescription'],
-    href: '/experience',
-    icon: HotAirBalloonIcon,
-  },
-  {
-    name: T['Header']['DropdownTravelers']['Flights'],
-    description: T['Header']['DropdownTravelers']['Flight description'],
-    href: '/flight-categories/all',
-    icon: Airplane02Icon,
-  },
+
 ]
 
 export default function DropdownTravelers() {
@@ -47,7 +30,7 @@ export default function DropdownTravelers() {
   return (
     <Popover className="group">
       <PopoverButton className="-m-2.5 flex items-center p-2.5 text-sm font-medium text-neutral-700 group-hover:text-neutral-950 focus:outline-hidden dark:text-neutral-300 dark:group-hover:text-neutral-100">
-        Travelers
+        SignIn
         <ChevronDownIcon className="ms-1 size-4 group-data-open:rotate-180" aria-hidden="true" />
       </PopoverButton>
       <PopoverPanel
@@ -83,19 +66,7 @@ export default function DropdownTravelers() {
             })}
           </div>
           {/* FOOTER */}
-          <div className="bg-neutral-50 p-4 dark:bg-neutral-700">
-            <Link
-              href="/"
-              className="focus-visible:ring-opacity-50 flow-root space-y-0.5 rounded-md px-2 py-2 focus:outline-none focus-visible:ring focus-visible:ring-orange-500"
-            >
-              <span className="flex items-center">
-                <span className="text-sm font-medium">{`${T['Header']['DropdownTravelers']['footerDoc']}`}</span>
-              </span>
-              <span className="line-clamp-1 text-sm text-gray-500 dark:text-neutral-400">
-                {`${T['Header']['DropdownTravelers']['footerDescription']}`}
-              </span>
-            </Link>
-          </div>
+    
         </div>
       </PopoverPanel>
     </Popover>

@@ -36,14 +36,14 @@ async function Page() {
       <BgGlassmorphism />
       <div className="relative container mb-24 flex flex-col gap-y-24 lg:mb-28 lg:gap-y-32">
         <HeroSectionWithSearchForm1
-          heading="Hotel, car, experiences"
+          heading="A stress-free move, every time."
           image={heroImage}
           imageAlt="hero"
           searchForm={<HeroSearchForm initTab="Stays" />}
           description={
             <>
               <p className="max-w-xl text-base text-neutral-500 sm:text-xl dark:text-neutral-400">
-                With us, your trip is filled with amazing experiences.
+                Trusted movers for life’s big moments.
               </p>
               <ButtonPrimary href={'/stay-categories/all'} className="sm:text-base/normal">
                 Start your search
