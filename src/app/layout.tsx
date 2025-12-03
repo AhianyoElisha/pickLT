@@ -4,6 +4,7 @@ import { Poppins } from 'next/font/google'
 import 'rc-slider/assets/index.css'
 import CustomizeControl from './customize-control'
 import ThemeProvider from './theme-provider'
+import MoveSearchProvider from '@/context/moveSearch'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -26,7 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
         <ThemeProvider>
           <div>
-            {children}
+            {/* Move search provider makes the quick booking controlled across pages */}
+            <MoveSearchProvider>{children}</MoveSearchProvider>
 
             {/* For Chisfis's demo  -- you can remove it  */}
             <CustomizeControl />

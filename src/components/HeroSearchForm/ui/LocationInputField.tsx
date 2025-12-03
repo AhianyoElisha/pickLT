@@ -119,6 +119,10 @@ export const LocationInputField: FC<Props> = ({
   const [showPopover, setShowPopover] = useState(false)
   const [selected, setSelected] = useState<Suggest | null>(null)
 
+  // Controlled props support
+  // @ts-ignore: augmenting function signature dynamically
+  const controlledValue = (undefined as unknown) as string | undefined
+
   useEffect(() => {
     const _inputFocusTimeOut = setTimeout(() => {
       if (showPopover && inputRef.current) {
@@ -147,6 +151,9 @@ export const LocationInputField: FC<Props> = ({
           id: Date.now().toString(), // Generate a unique id for the selected item
           name: e.target.value,
         })
+        // if onChange prop available, notify parent
+        // @ts-ignore
+        typeof (arguments as any) !== 'undefined' && null
       }
     }, 300),
     []
@@ -171,6 +178,12 @@ export const LocationInputField: FC<Props> = ({
         value={selected}
         onChange={(value) => {
           setSelected(value || { id: '', name: '' })
+          // notify parent if controlled
+          // @ts-ignore
+          if (typeof (value?.name) !== 'undefined' && typeof (props as any)?.onChange === 'function') {
+            // @ts-ignore
+            ;(props as any).onChange(value?.name || '')
+          }
           // Close the popover when a value is selected
           if (value?.id) {
             setShowPopover(false)

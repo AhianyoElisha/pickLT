@@ -6,7 +6,7 @@ import T from '@/utils/getT'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
 import { CalendarIcon } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
-import { FC, useState } from 'react'
+import { FC, useState, useEffect } from 'react'
 import DatePicker from 'react-datepicker'
 import { ClearDataButton } from './ClearDataButton'
 
@@ -35,6 +35,10 @@ interface Props {
   description?: string
   panelClassName?: string
   isOnlySingleDate?: boolean
+  label?: string
+  hiddenInputName?: string
+  value?: string | null
+  onChange?: (isoDate: string | null) => void
 }
 
 export const DateRangeField: FC<Props> = ({
@@ -44,9 +48,20 @@ export const DateRangeField: FC<Props> = ({
   description = `${T['HeroSearchForm']['CheckIn']} - ${T['HeroSearchForm']['CheckOut']}`,
   panelClassName,
   isOnlySingleDate = false,
+  label,
+  hiddenInputName,
+  value,
+  onChange,
 }) => {
-  const [startDate, setStartDate] = useState<Date | null>(new Date('2025/09/08'))
-  const [endDate, setEndDate] = useState<Date | null>(new Date('2025/09/19'))
+  const [startDate, setStartDate] = useState<Date | null>(value ? new Date(value) : null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
+
+  // keep controlled value in sync
+  useEffect(() => {
+    if (isOnlySingleDate) {
+      setStartDate(value ? new Date(value) : null)
+    }
+  }, [value, isOnlySingleDate])
 
   return (
     <>
@@ -65,7 +80,7 @@ export const DateRangeField: FC<Props> = ({
                   {startDate?.toLocaleDateString('en-US', {
                     month: 'short',
                     day: '2-digit',
-                  }) || T['HeroSearchForm']['Add dates']}
+                  }) || label || T['HeroSearchForm']['Add dates']}
                   {endDate && !isOnlySingleDate
                     ? ' - ' +
                       endDate?.toLocaleDateString('en-US', {
@@ -98,6 +113,7 @@ export const DateRangeField: FC<Props> = ({
                   selected={startDate}
                   onChange={(date) => {
                     setStartDate(date)
+                    if (onChange) onChange(date ? (date as Date).toISOString().split('T')[0] : null)
                     // set end-date = start-date + 2 day
                     setEndDate(new Date((date?.getTime() || 0) + 2 * 24 * 60 * 60 * 1000))
                   }}
@@ -112,9 +128,12 @@ export const DateRangeField: FC<Props> = ({
                 <DatePicker
                   selected={startDate}
                   onChange={(dates) => {
-                    const [start, end] = dates
+                    const [start, end] = dates as unknown as [Date | null, Date | null]
                     setStartDate(start)
                     setEndDate(end)
+                    if (!isOnlySingleDate && onChange) {
+                      // range updates not wired to onChange currently
+                    }
                   }}
                   startDate={startDate}
                   endDate={endDate}
@@ -132,9 +151,13 @@ export const DateRangeField: FC<Props> = ({
       </Popover>
 
       {/* input:hidde */}
-      <input type="hidden" name="checkin" value={startDate ? startDate.toISOString().split('T')[0] : ''} />
+      <input
+        type="hidden"
+        name={isOnlySingleDate ? hiddenInputName || 'moveDate' : 'checkin'}
+        value={startDate ? startDate.toISOString().split('T')[0] : ''}
+      />
       {!isOnlySingleDate && (
-        <input type="hidden" name="checkout" value={endDate ? endDate.toISOString().split('T')[0] : ''} />
+        <input type="hidden" name={hiddenInputName || 'checkout'} value={endDate ? endDate.toISOString().split('T')[0] : ''} />
       )}
     </>
   )

@@ -3,7 +3,7 @@
 import clsx from 'clsx'
 import Form from 'next/form'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ButtonSubmit, DateRangeField, GuestNumberField, LocationInputField, VerticalDividerLine } from './ui'
 
 interface Props {
@@ -19,17 +19,23 @@ export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
     router.prefetch('/add-listing/1')
   }, [router])
 
+  const [moveType, setMoveType] = useState<string | null>(null)
+
   const handleFormSubmit = (formData: FormData) => {
     const formDataEntries = Object.fromEntries(formData.entries())
     console.log('Form submitted', formDataEntries)
-    // You can also redirect or perform other actions based on the form data
 
-    // example: add location to the URL
-    const location = formDataEntries['location'] as string
+    const location = (formDataEntries['pickupLocation'] || formDataEntries['location'] || '') as string
+    const moveDate = (formDataEntries['moveDate'] || '') as string
+    const mt = (formDataEntries['moveType'] || moveType || '') as string
+
     let url = '/add-listing/1'
-    if (location) {
-      url = url + `?location=${encodeURIComponent(location)}`
-    }
+    const params = new URLSearchParams()
+    if (location) params.set('location', location)
+    if (moveDate) params.set('moveDate', moveDate)
+    if (mt) params.set('moveType', mt)
+    const qs = params.toString()
+    if (qs) url = url + `?${qs}`
     router.push(url)
   }
 
@@ -43,18 +49,31 @@ export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
       )}
       action={handleFormSubmit}
     >
-      <LocationInputField className="hero-search-form__field-after flex-5/12" fieldStyle={formStyle} />
+      <LocationInputField
+        className="hero-search-form__field-after flex-5/12"
+        fieldStyle={formStyle}
+        placeholder="Where are you moving from?"
+        description="Pickup location"
+        inputName="pickupLocation"
+      />
       <VerticalDividerLine />
       <DateRangeField
         className="hero-search-form__field-before hero-search-form__field-after flex-4/12"
         fieldStyle={formStyle}
+        isOnlySingleDate
+        label="Move date"
+        description="Select your move date"
+        hiddenInputName="moveDate"
       />
       <VerticalDividerLine />
       <GuestNumberField
         className="hero-search-form__field-before flex-4/12"
         clearDataButtonClassName={clsx(formStyle === 'small' && 'sm:end-18', formStyle === 'default' && 'sm:end-22')}
         fieldStyle={formStyle}
+        onChange={(val) => setMoveType(val)}
       />
+      {/* hidden input to include moveType in form submission */}
+      <input type="hidden" name="moveType" value={moveType || ''} />
 
       <ButtonSubmit fieldStyle={formStyle} className="z-10" />
     </Form>

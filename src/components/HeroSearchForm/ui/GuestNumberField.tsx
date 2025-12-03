@@ -1,13 +1,11 @@
 'use client'
 
-import NcInputNumber from '@/components/NcInputNumber'
-import { GuestsObject } from '@/type'
 import T from '@/utils/getT'
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
 import { UserPlusIcon } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
-import { FC, useState } from 'react'
+import { FC, useState, useRef, useEffect } from 'react'
 import { ClearDataButton } from './ClearDataButton'
+import { useInteractOutside } from '@/hooks/useInteractOutside'
 
 const styles = {
   button: {
@@ -31,100 +29,92 @@ interface Props {
   fieldStyle: 'default' | 'small'
   className?: string
   clearDataButtonClassName?: string
+  onChange?: (moveType: MoveTypeKey | null) => void
+  value?: MoveTypeKey | null
 }
+
+type MoveTypeKey = 'light' | 'regular' | 'premium'
+
+const MOVE_TYPES: { key: MoveTypeKey; label: string; description: string }[] = [
+  { key: 'light', label: 'Light Move', description: 'Small load — few items or studio apartment' },
+  { key: 'regular', label: 'Regular Move', description: 'Standard household move — 2–3 bedroom' },
+  { key: 'premium', label: 'Premium Move', description: 'Full-service move with packing & unpacking' },
+]
 
 export const GuestNumberField: FC<Props> = ({
   fieldStyle = 'default',
   className = 'flex-1',
   clearDataButtonClassName,
+  onChange,
 }) => {
-  const [guestAdultsInputValue, setGuestAdultsInputValue] = useState(2)
-  const [guestChildrenInputValue, setGuestChildrenInputValue] = useState(1)
-  const [guestInfantsInputValue, setGuestInfantsInputValue] = useState(1)
+  const [internalMoveType, setInternalMoveType] = useState<MoveTypeKey | null>(null)
+  const [open, setOpen] = useState(false)
+  const isControlled = typeof value !== 'undefined'
+  const moveType = isControlled ? value ?? null : internalMoveType
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
-  const handleChangeData = (value: number, type: keyof GuestsObject) => {
-    let newValue = {
-      guestAdults: guestAdultsInputValue,
-      guestChildren: guestChildrenInputValue,
-      guestInfants: guestInfantsInputValue,
-    }
-    if (type === 'guestAdults') {
-      setGuestAdultsInputValue(value)
-      newValue.guestAdults = value
-    }
-    if (type === 'guestChildren') {
-      setGuestChildrenInputValue(value)
-      newValue.guestChildren = value
-    }
-    if (type === 'guestInfants') {
-      setGuestInfantsInputValue(value)
-      newValue.guestInfants = value
-    }
+  useInteractOutside(containerRef, () => setOpen(false))
+
+  const selected = MOVE_TYPES.find((m) => m.key === moveType)
+
+  const handleSelect = (key: MoveTypeKey | null) => {
+    if (!isControlled) setInternalMoveType(key)
+    if (onChange) onChange(key)
+    if (key !== null) setOpen(false)
   }
 
-  const totalGuests = guestChildrenInputValue + guestAdultsInputValue + guestInfantsInputValue
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
-    <Popover className={`group relative z-10 flex ${className}`}>
-      {({ open: showPopover }) => (
-        <>
-          <PopoverButton
-            className={clsx(styles.button.base, styles.button[fieldStyle], showPopover && styles.button.focused)}
-          >
-            {fieldStyle === 'default' && (
-              <UserPlusIcon className="size-5 text-neutral-300 lg:size-7 dark:text-neutral-400" />
-            )}
+    <div ref={containerRef} className={`group relative z-10 flex ${className}`}>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={clsx(styles.button.base, styles.button[fieldStyle], open && styles.button.focused)}
+      >
+        {fieldStyle === 'default' && <UserPlusIcon className="size-5 text-neutral-300 lg:size-7 dark:text-neutral-400" />}
 
-            <div className="grow">
-              <span className={clsx('block font-semibold', styles.mainText[fieldStyle])}>
-                {totalGuests || ''} {T['HeroSearchForm']['Guests']}
-              </span>
-              <span className="mt-1 block text-sm leading-none font-light text-neutral-400">
-                {totalGuests ? T['HeroSearchForm']['Guests'] : T['HeroSearchForm']['Add guests']}
-              </span>
-            </div>
-          </PopoverButton>
+        <div className="grow">
+          <span className={clsx('block font-semibold', styles.mainText[fieldStyle])}>{selected?.label || 'Type of move'}</span>
+          <span className="mt-1 block text-sm leading-none font-light text-neutral-400">{selected?.description || 'Choose a move type'}</span>
+        </div>
+      </button>
 
-          <ClearDataButton
-            className={clsx(!totalGuests && 'sr-only', clearDataButtonClassName)}
-            onClick={() => {
-              setGuestAdultsInputValue(0)
-              setGuestChildrenInputValue(0)
-              setGuestInfantsInputValue(0)
-            }}
-          />
+      <ClearDataButton className={clsx(!moveType && 'sr-only', clearDataButtonClassName)} onClick={() => handleSelect(null)} />
 
-          <PopoverPanel unmount={false} transition className={clsx(styles.panel.base, styles.panel[fieldStyle])}>
-            <NcInputNumber
-              className="w-full"
-              defaultValue={guestAdultsInputValue}
-              onChange={(value) => handleChangeData(value, 'guestAdults')}
-              max={10}
-              min={1}
-              label={T['HeroSearchForm']['Adults']}
-              description={T['HeroSearchForm']['Ages 13 or above']}
-              inputName="guestAdults"
-            />
-            <NcInputNumber
-              className="w-full"
-              defaultValue={guestChildrenInputValue}
-              onChange={(value) => handleChangeData(value, 'guestChildren')}
-              max={4}
-              label={T['HeroSearchForm']['Children']}
-              description={T['HeroSearchForm']['Ages 2–12']}
-              inputName="guestChildren"
-            />
-            <NcInputNumber
-              className="w-full"
-              defaultValue={guestInfantsInputValue}
-              onChange={(value) => handleChangeData(value, 'guestInfants')}
-              max={4}
-              label={T['HeroSearchForm']['Infants']}
-              description={T['HeroSearchForm']['Ages 0–2']}
-              inputName="guestInfants"
-            />
-          </PopoverPanel>
-        </>
+      {open && (
+        <div className={clsx(styles.panel.base, styles.panel[fieldStyle])} role="dialog" aria-label="Select move type">
+          <div className="flex flex-col gap-3">
+            {MOVE_TYPES.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => handleSelect(opt.key)}
+                className={clsx(
+                  'w-full text-left rounded-lg p-3 transition',
+                  moveType === opt.key ? 'bg-neutral-100 dark:bg-neutral-700' : 'hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{opt.label}</div>
+                    <div className="text-sm text-neutral-500">{opt.description}</div>
+                  </div>
+                  {moveType === opt.key && <span className="text-sm font-semibold text-neutral-700">Selected</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
-    </Popover>
+    </div>
   )
 }
