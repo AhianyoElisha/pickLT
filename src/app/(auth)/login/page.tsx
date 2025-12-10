@@ -1,10 +1,13 @@
+'use client'
+
 import ButtonPrimary from '@/shared/ButtonPrimary'
 import { Field, Label } from '@/shared/fieldset'
 import Input from '@/shared/Input'
 import Logo from '@/shared/Logo'
 import T from '@/utils/getT'
-import { Metadata } from 'next'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import type { JSX } from 'react'
 
 const socials: {
@@ -38,12 +41,14 @@ const socials: {
   },
 ]
 
-export const metadata: Metadata = {
-  title: 'Login',
-  description: 'Login to your account',
-}
+const LoginContent = () => {
+  const searchParams = useSearchParams()
+  const userType = searchParams.get('type') || 'client'
+  const isMover = userType === 'mover'
 
-const Page = () => {
+  const pageTitle = isMover ? 'Mover Login' : 'Client Login'
+  const signupLink = isMover ? '/signup?type=mover' : '/signup?type=client'
+
   return (
     <div className="container">
       <div className="my-16 flex justify-center">
@@ -51,6 +56,19 @@ const Page = () => {
       </div>
 
       <div className="mx-auto max-w-md space-y-6">
+        {/* User type badge */}
+        <div className="flex justify-center">
+          <span className={`inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium ${
+            isMover 
+              ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' 
+              : 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+          }`}>
+            {isMover ? '🚚 Mover Account' : '👤 Client Account'}
+          </span>
+        </div>
+
+        <h1 className="text-center text-2xl font-semibold">{pageTitle}</h1>
+
         <div className="grid gap-3">
           {socials.map((item, index) => (
             <Link
@@ -91,12 +109,31 @@ const Page = () => {
         {/* ==== */}
         <div className="block text-center text-sm text-neutral-700 dark:text-neutral-300">
           {T['login']['New user?']} {` `}
-          <Link href="/signup" className="font-medium underline">
+          <Link href={signupLink} className="font-medium underline">
             {T['login']['Create an account']}
+          </Link>
+        </div>
+
+        {/* Switch account type */}
+        <div className="block text-center text-sm text-neutral-500 dark:text-neutral-400">
+          {isMover ? 'Are you a client?' : 'Are you a mover?'} {` `}
+          <Link 
+            href={isMover ? '/login?type=client' : '/login?type=mover'} 
+            className="font-medium text-primary-600 hover:underline"
+          >
+            {isMover ? 'Login as Client' : 'Login as Mover'}
           </Link>
         </div>
       </div>
     </div>
+  )
+}
+
+const Page = () => {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
 

@@ -1,11 +1,15 @@
+'use client'
+
 import ButtonPrimary from '@/shared/ButtonPrimary'
 import { Field, Label } from '@/shared/fieldset'
 import Input from '@/shared/Input'
 import Logo from '@/shared/Logo'
 import T from '@/utils/getT'
-import { Metadata } from 'next'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useState, useRef } from 'react'
 import type { JSX } from 'react'
+import { PhotoIcon, TruckIcon, DocumentIcon } from '@heroicons/react/24/outline'
 
 const socials: {
   name: string
@@ -38,64 +42,309 @@ const socials: {
   },
 ]
 
-export const metadata: Metadata = {
-  title: 'Sign Up',
-  description: 'Sign up for a new account',
-}
-const Page = () => {
+function SignupContent() {
+  const searchParams = useSearchParams()
+  const type = searchParams.get('type') || 'client'
+  const isMover = type === 'mover'
+
+  // Form state
+  const [fullName, setFullName] = useState('')
+  const [contactNumber, setContactNumber] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  // Mover-specific state
+  const [driversLicense, setDriversLicense] = useState<string | null>(null)
+  const [driversLicenseFileName, setDriversLicenseFileName] = useState('')
+  const [vehicleBrand, setVehicleBrand] = useState('')
+  const [vehicleModel, setVehicleModel] = useState('')
+  const [vehicleRegistration, setVehicleRegistration] = useState('')
+  const [vehicleYear, setVehicleYear] = useState('')
+  const [vehicleCapacity, setVehicleCapacity] = useState('')
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDriversLicenseUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setDriversLicenseFileName(file.name)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setDriversLicense(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // TODO: Implement actual signup logic
+    console.log('Signup submitted', {
+      type,
+      fullName,
+      contactNumber,
+      email,
+      password,
+      ...(isMover && {
+        driversLicense,
+        vehicleBrand,
+        vehicleModel,
+        vehicleRegistration,
+        vehicleYear,
+        vehicleCapacity,
+      }),
+    })
+  }
+
   return (
-    <div className="container">
+    <div className="container pb-16">
       <div className="my-16 flex justify-center">
         <Logo className="w-32" />
       </div>
 
       <div className="mx-auto max-w-md space-y-6">
-        <div className="grid gap-3">
-          {socials.map((item, index) => (
-            <Link
-              key={index}
-              href={item.href}
-              className="flex w-full rounded-lg bg-primary-50 px-4 py-3 transition-transform hover:translate-y-0.5 dark:bg-neutral-800"
-            >
-              <item.icon className="size-5 shrink-0" />
-              <h3 className="grow text-center text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                {item.name}
-              </h3>
-            </Link>
-          ))}
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+            {isMover ? 'Mover Sign Up' : 'Client Sign Up'}
+          </h2>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            {isMover
+              ? 'Join our network of professional movers'
+              : 'Create an account to book your moves'}
+          </p>
         </div>
-        {/* OR */}
-        <div className="relative text-center">
-          <span className="relative z-10 inline-block bg-white px-4 text-sm font-medium dark:bg-neutral-900 dark:text-neutral-400">
-            OR
-          </span>
-          <div className="absolute top-1/2 left-0 w-full -translate-y-1/2 transform border border-neutral-100 dark:border-neutral-800"></div>
-        </div>
+
+        {!isMover && (
+          <>
+            <div className="grid gap-3">
+              {socials.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.href}
+                  className="flex w-full rounded-lg bg-primary-50 px-4 py-3 transition-transform hover:translate-y-0.5 dark:bg-neutral-800"
+                >
+                  <item.icon className="size-5 shrink-0" />
+                  <h3 className="grow text-center text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {item.name}
+                  </h3>
+                </Link>
+              ))}
+            </div>
+            {/* OR */}
+            <div className="relative text-center">
+              <span className="relative z-10 inline-block bg-white px-4 text-sm font-medium dark:bg-neutral-900 dark:text-neutral-400">
+                OR
+              </span>
+              <div className="absolute top-1/2 left-0 w-full -translate-y-1/2 transform border border-neutral-100 dark:border-neutral-800"></div>
+            </div>
+          </>
+        )}
+
         {/* FORM */}
-        <form className="grid grid-cols-1 gap-6" action="#" method="post">
+        <form className="grid grid-cols-1 gap-6" onSubmit={handleSubmit}>
+          {/* Common fields */}
+          <Field className="block">
+            <Label className="text-neutral-800 dark:text-neutral-200">Full Name</Label>
+            <Input
+              type="text"
+              placeholder="John Doe"
+              className="mt-1"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </Field>
+
           <Field className="block">
             <Label className="text-neutral-800 dark:text-neutral-200">{T['login']['Contact number']}</Label>
-            <Input type="tel" placeholder="+49 345 456 3453" className="mt-1" />
+            <Input
+              type="tel"
+              placeholder="+49 345 456 3453"
+              className="mt-1"
+              value={contactNumber}
+              onChange={(e) => setContactNumber(e.target.value)}
+              required
+            />
           </Field>
+
           <Field className="block">
             <Label className="text-neutral-800 dark:text-neutral-200">{T['login']['Email address']}</Label>
-            <Input type="email" placeholder="example@example.com" className="mt-1" />
+            <Input
+              type="email"
+              placeholder="example@example.com"
+              className="mt-1"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </Field>
+
           <Field className="block">
-            <Label className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
-              {T['login']['Password']}
-            </Label>
-            <Input type="password" className="mt-1" />
+            <Label className="text-neutral-800 dark:text-neutral-200">{T['login']['Password']}</Label>
+            <Input
+              type="password"
+              className="mt-1"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </Field>
-          <Link href="/login">
-            <ButtonPrimary type="button">{T['common']['Continue']}</ButtonPrimary>
-          </Link>
+
+          <Field className="block">
+            <Label className="text-neutral-800 dark:text-neutral-200">Confirm Password</Label>
+            <Input
+              type="password"
+              className="mt-1"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </Field>
+
+          {/* Mover-specific fields */}
+          {isMover && (
+            <>
+              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                  <DocumentIcon className="h-5 w-5" />
+                  Verification Documents
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                  Upload your driver&apos;s license for verification
+                </p>
+              </div>
+
+              {/* Driver's License Upload */}
+              <Field className="block">
+                <Label className="text-neutral-800 dark:text-neutral-200">Driver&apos;s License</Label>
+                <div className="mt-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleDriversLicenseUpload}
+                    className="hidden"
+                  />
+                  {driversLicense ? (
+                    <div className="relative rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                      <img
+                        src={driversLicense}
+                        alt="Driver's License"
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 flex justify-between items-center">
+                        <span className="text-white text-sm truncate">{driversLicenseFileName}</span>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-white text-sm underline"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 p-8 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
+                    >
+                      <PhotoIcon className="mx-auto h-12 w-12 text-neutral-400" />
+                      <span className="mt-2 block text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        Click to upload driver&apos;s license
+                      </span>
+                      <span className="mt-1 block text-xs text-neutral-500">
+                        PNG, JPG, GIF up to 10MB
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </Field>
+
+              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                  <TruckIcon className="h-5 w-5" />
+                  Vehicle Details
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                  Provide details about your moving vehicle
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field className="block">
+                  <Label className="text-neutral-800 dark:text-neutral-200">Vehicle Brand</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Ford"
+                    className="mt-1"
+                    value={vehicleBrand}
+                    onChange={(e) => setVehicleBrand(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <Field className="block">
+                  <Label className="text-neutral-800 dark:text-neutral-200">Vehicle Model</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Transit"
+                    className="mt-1"
+                    value={vehicleModel}
+                    onChange={(e) => setVehicleModel(e.target.value)}
+                    required
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field className="block">
+                  <Label className="text-neutral-800 dark:text-neutral-200">Year</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. 2022"
+                    className="mt-1"
+                    value={vehicleYear}
+                    onChange={(e) => setVehicleYear(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <Field className="block">
+                  <Label className="text-neutral-800 dark:text-neutral-200">Capacity (m³)</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. 15"
+                    className="mt-1"
+                    value={vehicleCapacity}
+                    onChange={(e) => setVehicleCapacity(e.target.value)}
+                    required
+                  />
+                </Field>
+              </div>
+
+              <Field className="block">
+                <Label className="text-neutral-800 dark:text-neutral-200">Registration Number</Label>
+                <Input
+                  type="text"
+                  placeholder="e.g. ABC-1234"
+                  className="mt-1"
+                  value={vehicleRegistration}
+                  onChange={(e) => setVehicleRegistration(e.target.value)}
+                  required
+                />
+              </Field>
+            </>
+          )}
+
+          <ButtonPrimary type="submit">{T['common']['Continue']}</ButtonPrimary>
         </form>
 
         {/* ==== */}
         <div className="block text-center text-sm text-neutral-700 dark:text-neutral-300">
           {T['login']['Already have an account?']} {` `}
-          <Link href="/login" className="font-medium underline">
+          <Link href={`/login?type=${type}`} className="font-medium underline">
             {T['login']['Sign in']}
           </Link>
         </div>
@@ -104,4 +353,10 @@ const Page = () => {
   )
 }
 
-export default Page
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="container py-16 text-center">Loading...</div>}>
+      <SignupContent />
+    </Suspense>
+  )
+}

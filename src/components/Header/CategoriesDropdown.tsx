@@ -3,35 +3,22 @@
 import T from '@/utils/getT'
 import { CloseButton, Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
-import { Building03Icon, House04Icon } from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
+import { TruckIcon, UserIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const solutions = [
   {
     name: T['Header']['DropdownTravelers']['Client'],
-    description: T['Header']['DropdownTravelers']['clientDescription'],
-    href: '/',
-    icon: House04Icon,
+    description: 'Sign in or sign up as a client',
+    href: '/login?type=client',
+    icon: UserIcon,
   },
   {
     name: T['Header']['DropdownTravelers']['Mover'],
-    description: T['Header']['DropdownTravelers']['moverDescription'],
-    href: '/real-estate',
-    icon: Building03Icon,
-  },
-  {
-    name: T['login']['Sign in'],
-    description: 'Access your account',
-    href: '/login',
-    icon: House04Icon,
-  },
-  {
-    name: T['login']['Create an account'],
-    description: 'Register a new account',
-    href: '/signup',
-    icon: Building03Icon,
+    description: 'Sign in or sign up as a mover',
+    href: '/login?type=mover',
+    icon: TruckIcon,
   },
 ]
 
@@ -66,7 +53,7 @@ export default function DropdownTravelers() {
                   }`}
                 >
                   <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-md bg-neutral-50 text-primary-500 sm:h-12 sm:w-12 dark:bg-neutral-700 dark:text-primary-200">
-                    <HugeiconsIcon icon={item.icon} size={28} color="currentColor" strokeWidth={1.5} />
+                    <item.icon className="size-7" />
                   </div>
                   <div className="ms-4 space-y-0.5">
                     <p className="text-sm font-medium">{item.name}</p>
@@ -76,7 +63,6 @@ export default function DropdownTravelers() {
               )
             })}
           </div>
-          {/* FOOTER */}
         </div>
       </PopoverPanel>
     </Popover>
