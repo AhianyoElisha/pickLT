@@ -11,14 +11,14 @@ const Logo: React.FC<LogoProps> = ({ className = 'w-22 sm:w-24' }) => {
   return (
     <Link href="/" className={`inline-block text-primary-600 focus:ring-0 focus:outline-hidden ${className}`}>
         <Image
-          src="/logoDark.png"
+          src="/logoDark.svg"
           alt="PickIt Logo"
           width={96}
           height={40}
           className="hidden dark:block w-full h-auto"
         />
         <Image
-          src="/logoLight.png"
+          src="/logoLight.svg"
           alt="PickIt Logo"
           width={96}
           height={40}
