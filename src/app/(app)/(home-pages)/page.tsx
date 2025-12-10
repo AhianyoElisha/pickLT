@@ -14,7 +14,6 @@ import SectionSubscribe2 from '@/components/SectionSubscribe2'
 import SectionVideos from '@/components/SectionVideos'
 import { getAuthors } from '@/data/authors'
 import { getStayCategories } from '@/data/categories'
-import { getStayListings } from '@/data/listings'
 import heroImage from '@/images/hero-right.png'
 import ButtonPrimary from '@/shared/ButtonPrimary'
 import { Divider } from '@/shared/divider'
@@ -28,7 +27,6 @@ export const metadata: Metadata = {
 
 async function Page() {
   const categories = await getStayCategories()
-  const stayListings = await getStayListings()
   const authors = await getAuthors()
 
   return (
@@ -59,10 +57,10 @@ async function Page() {
           <SectionSliderNewCategories categoryCardType="card3" categories={categories.slice(0, 7)} />
         </div> */}
 
-        {/* <SectionOurFeatures className="py-14" />
-        <SectionGridFeaturePlaces stayListings={stayListings} cardType="card2" />
+        {/* <SectionOurFeatures className="py-14" /> */}
+        <SectionGridFeaturePlaces />
         <Divider />
-        <SectionHowItWork />
+        {/* <SectionHowItWork />
         <div className="relative py-20">
           <BackgroundSection />
           <HeadingWithSub isCenter subheading="Keep calm & travel on">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMoveSearch } from '@/context/moveSearch'
+import { StoredMove, useMoveSearch } from '@/context/moveSearch'
 import ButtonPrimary from '@/shared/ButtonPrimary'
 import { DescriptionDetails, DescriptionList, DescriptionTerm } from '@/shared/description-list'
 import { Divider } from '@/shared/divider'
@@ -44,7 +44,16 @@ const Page = () => {
     moveDate,
     pickupStreetAddress,
     pickupLocation,
+    pickupApartmentUnit,
     dropoffStreetAddress,
+    dropoffApartmentUnit,
+    dropoffFloorLevel,
+    homeType,
+    floorLevel,
+    elevatorAvailable,
+    dropoffElevatorAvailable,
+    parkingSituation,
+    dropoffParkingSituation,
     arrivalWindow,
     packingServiceLevel,
     additionalServices,
@@ -54,6 +63,10 @@ const Page = () => {
     inventory,
     customItems,
     coverPhoto,
+    galleryPhotos,
+    contactInfo,
+    addStoredMove,
+    reset,
   } = useMoveSearch()
 
   React.useEffect(() => {
@@ -74,11 +87,84 @@ const Page = () => {
 
   const inventoryCount = Object.values(inventory).reduce((sum, qty) => sum + qty, 0) + customItems.length
 
+  // Generate unique booking code
+  const generateBookingCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let code = '#'
+    for (let i = 0; i < 3; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    code += '-'
+    for (let i = 0; i < 3; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    code += '-'
+    for (let i = 0; i < 3; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return code
+  }
+
+  // Generate unique handle for the move
+  const generateHandle = () => {
+    const timestamp = Date.now()
+    const random = Math.random().toString(36).substring(2, 8)
+    return `move-${timestamp}-${random}`
+  }
+
   const handleSubmitForm = async (formData: FormData) => {
     const formObject = Object.fromEntries(formData.entries())
     console.log('Form submitted:', formObject)
-    // Here you can handle the form submission, e.g., send it to an API
-    router.push('/pay-done')
+
+    // Create the stored move
+    const newMove: StoredMove = {
+      id: `move-${Date.now()}`,
+      handle: generateHandle(),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      totalPrice: totalPrice,
+      bookingCode: generateBookingCode(),
+      // Core move details
+      moveType,
+      moveDate,
+      pickupLocation,
+      pickupStreetAddress,
+      pickupApartmentUnit,
+      dropoffStreetAddress,
+      dropoffApartmentUnit,
+      dropoffFloorLevel,
+      homeType,
+      floorLevel,
+      elevatorAvailable,
+      dropoffElevatorAvailable,
+      parkingSituation,
+      dropoffParkingSituation,
+      // Services
+      packingServiceLevel,
+      additionalServices,
+      storageWeeks,
+      // Crew & vehicle
+      crewSize,
+      vehicleType,
+      arrivalWindow,
+      // Items
+      inventoryCount,
+      // Contact
+      contactInfo,
+      // Photos
+      coverPhoto,
+      galleryPhotos,
+    }
+
+    // Add to stored moves
+    addStoredMove(newMove)
+
+    // Reset the form state for a new move
+    reset()
+
+    // Navigate to pay-done page with the move handle
+    router.push(`/pay-done?handle=${newMove.handle}`)
   }
 
   const renderSidebar = () => {

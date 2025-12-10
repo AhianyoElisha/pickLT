@@ -7,7 +7,6 @@ import SectionGridFeaturePlaces from '@/components/SectionGridFeaturePlaces'
 import SectionSubscribe2 from '@/components/SectionSubscribe2'
 import { getAuthors } from '@/data/authors'
 import { getStayCategories } from '@/data/categories'
-import { getStayListings } from '@/data/listings'
 import ButtonPrimary from '@/shared/ButtonPrimary'
 import HeadingWithSub from '@/shared/Heading'
 import { Metadata } from 'next'
@@ -51,7 +50,6 @@ async function Home() {
   const categories = await getStayCategories()
   const categories_1 = categories.slice(0, 8)
   const categories_2 = categories.slice(7, 14)
-  const stayListings = await getStayListings()
 
   return (
     <>
@@ -94,7 +92,7 @@ async function Home() {
             <SectionGridAuthorBox authors={authors} boxCard="box2" />
           </div>
 
-          <SectionGridFeaturePlaces stayListings={stayListings} />
+          <SectionGridFeaturePlaces />
 
           {/* SECTION */}
           <SectionSubscribe2 />

@@ -73,6 +73,50 @@ export type LegalConsent = {
   privacyAccepted: boolean
 }
 
+// Move Status type for saved/paid moves
+export type MoveStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled'
+
+// Stored move type (saved after payment)
+export type StoredMove = {
+  id: string
+  handle: string
+  status: MoveStatus
+  createdAt: string
+  paidAt: string
+  totalPrice: number
+  bookingCode: string
+  // Core move details
+  moveType: MoveTypeKey | null
+  moveDate: string | null
+  pickupLocation: string
+  pickupStreetAddress: string
+  pickupApartmentUnit: string
+  dropoffStreetAddress: string
+  dropoffApartmentUnit: string
+  dropoffFloorLevel: FloorLevelKey | null
+  homeType: HomeTypeKey | null
+  floorLevel: FloorLevelKey | null
+  elevatorAvailable: boolean
+  dropoffElevatorAvailable: boolean
+  parkingSituation: ParkingKey | null
+  dropoffParkingSituation: DropoffParkingKey | null
+  // Services
+  packingServiceLevel: PackingServiceLevel | null
+  additionalServices: AdditionalService[]
+  storageWeeks: number
+  // Crew & vehicle
+  crewSize: CrewSize | null
+  vehicleType: VehicleType | null
+  arrivalWindow: ArrivalWindow | null
+  // Items
+  inventoryCount: number
+  // Contact
+  contactInfo: ContactInfo
+  // Photos
+  coverPhoto: string | null
+  galleryPhotos: string[]
+}
+
 // Inventory item with metadata
 export type InventoryItem = {
   id: string
@@ -161,6 +205,9 @@ type MoveSearchState = {
 
   // Step 10 - Legal Consent
   legalConsent: LegalConsent
+
+  // Stored moves (paid/completed)
+  storedMoves: StoredMove[]
 }
 
 type MoveSearchActions = {
@@ -232,6 +279,12 @@ type MoveSearchActions = {
   // Step 10 actions
   setTermsAccepted: (accepted: boolean) => void
   setPrivacyAccepted: (accepted: boolean) => void
+
+  // Stored moves actions
+  addStoredMove: (move: StoredMove) => void
+  updateMoveStatus: (moveId: string, status: MoveStatus) => void
+  getMoveByHandle: (handle: string) => StoredMove | undefined
+  getFilteredMoves: (status?: MoveStatus) => StoredMove[]
 
   reset: () => void
 }
@@ -308,6 +361,9 @@ const defaultState: MoveSearchState = {
     termsAccepted: false,
     privacyAccepted: false,
   },
+
+  // Stored moves
+  storedMoves: [],
 }
 
 const MoveSearchContext = createContext<MoveSearchState & MoveSearchActions>({
@@ -377,6 +433,12 @@ const MoveSearchContext = createContext<MoveSearchState & MoveSearchActions>({
   setTermsAccepted: () => {},
   setPrivacyAccepted: () => {},
 
+  // Stored moves
+  addStoredMove: () => {},
+  updateMoveStatus: () => {},
+  getMoveByHandle: () => undefined,
+  getFilteredMoves: () => [],
+
   reset: () => {},
 })
 
@@ -442,6 +504,9 @@ export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) 
 
   // Step 10 state
   const [legalConsent, setLegalConsent] = useState<LegalConsent>(defaultState.legalConsent)
+
+  // Stored moves state
+  const [storedMoves, setStoredMoves] = useState<StoredMove[]>(defaultState.storedMoves)
 
   const setInventoryItem = (itemId: string, quantity: number) => {
     setInventory((prev) => ({ ...prev, [itemId]: quantity }))
@@ -532,6 +597,26 @@ export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) 
 
   const setPrivacyAccepted = (accepted: boolean) => {
     setLegalConsent((prev) => ({ ...prev, privacyAccepted: accepted }))
+  }
+
+  // Stored moves actions
+  const addStoredMove = (move: StoredMove) => {
+    setStoredMoves((prev) => [...prev, move])
+  }
+
+  const updateMoveStatus = (moveId: string, status: MoveStatus) => {
+    setStoredMoves((prev) =>
+      prev.map((move) => (move.id === moveId ? { ...move, status } : move))
+    )
+  }
+
+  const getMoveByHandle = (handle: string): StoredMove | undefined => {
+    return storedMoves.find((move) => move.handle === handle)
+  }
+
+  const getFilteredMoves = (status?: MoveStatus): StoredMove[] => {
+    if (!status) return storedMoves
+    return storedMoves.filter((move) => move.status === status)
   }
 
   const reset = () => {
@@ -644,6 +729,9 @@ export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) 
         // Step 10 state
         legalConsent,
 
+        // Stored moves
+        storedMoves,
+
         setPickupLocation,
         setMoveDate,
         setMoveType,
@@ -707,6 +795,12 @@ export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) 
         // Step 10 actions
         setTermsAccepted,
         setPrivacyAccepted,
+
+        // Stored moves actions
+        addStoredMove,
+        updateMoveStatus,
+        getMoveByHandle,
+        getFilteredMoves,
 
         reset,
       }}
