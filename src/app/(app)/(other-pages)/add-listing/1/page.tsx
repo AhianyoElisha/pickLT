@@ -6,12 +6,12 @@ import T from '@/utils/getT'
 import Form from 'next/form'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import FormItem from '../FormItem'
 import { useMoveSearch } from '@/context/moveSearch'
 import { useState } from 'react'
 
-const Page = () => {
+const PageContent = () => {
   const router = useRouter()
   // Prefetch the next step to improve performance
   useEffect(() => {
@@ -157,6 +157,14 @@ const Page = () => {
         </div> */}
       </Form>
     </>
+  )
+}
+
+const Page = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PageContent />
+    </Suspense>
   )
 }
 

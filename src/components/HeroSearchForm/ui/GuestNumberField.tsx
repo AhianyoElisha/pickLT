@@ -46,6 +46,7 @@ export const GuestNumberField: FC<Props> = ({
   className = 'flex-1',
   clearDataButtonClassName,
   onChange,
+  value,
 }) => {
   const [internalMoveType, setInternalMoveType] = useState<MoveTypeKey | null>(null)
   const [open, setOpen] = useState(false)

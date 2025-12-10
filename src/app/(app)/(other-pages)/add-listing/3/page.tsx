@@ -205,7 +205,7 @@ const Page = () => {
                     onChange={() => setDropoffArrangeHaltverbot(false)}
                     className="w-4 h-4 text-primary-600"
                   />
-                  <span className="text-sm">No, I'll handle it</span>
+                  <span className="text-sm">No, I&apos;ll handle it</span>
                 </label>
               </div>
             </FormItem>
