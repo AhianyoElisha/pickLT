@@ -1,91 +1,107 @@
 'use client'
 
-import { GuestsObject } from '@/type'
-import converSelectedDateToString from '@/utils/converSelectedDateToString'
 import T from '@/utils/getT'
 import Form from 'next/form'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import DatesRangeInput from '../DatesRangeInput'
 import FieldPanelContainer from '../FieldPanelContainer'
-import GuestsInput from '../GuestsInput'
 import LocationInput from '../LocationInput'
+import SingleDateInput from '../SingleDateInput'
+import MoveTypeInput from '../MoveTypeInput'
+
+type MoveTypeKey = 'light' | 'regular' | 'premium'
+
+const MOVE_TYPE_LABELS: Record<MoveTypeKey, string> = {
+  light: 'Light Move',
+  regular: 'Regular Move',
+  premium: 'Premium Move',
+}
 
 const StaySearchFormMobile = () => {
-  //
-  const [fieldNameShow, setFieldNameShow] = useState<'location' | 'dates' | 'guests'>('location')
-  //
-  const [locationInputTo, setLocationInputTo] = useState('')
-  const [guestInput, setGuestInput] = useState<GuestsObject>({
-    guestAdults: 0,
-    guestChildren: 0,
-    guestInfants: 0,
-  })
-  const [startDate, setStartDate] = useState<Date | null>(new Date('2025/10/05'))
-  const [endDate, setEndDate] = useState<Date | null>(new Date('2025/10/09'))
+  const [fieldNameShow, setFieldNameShow] = useState<'location' | 'dates' | 'moveType'>('location')
+  const [locationInput, setLocationInput] = useState('')
+  const [moveDate, setMoveDate] = useState<Date | null>(null)
+  const [moveType, setMoveType] = useState<MoveTypeKey | null>(null)
   const router = useRouter()
 
-  const onChangeDate = (dates: [Date | null, Date | null]) => {
-    const [start, end] = dates
-    setStartDate(start)
-    setEndDate(end)
-  }
   const handleFormSubmit = (formData: FormData) => {
     const formDataEntries = Object.fromEntries(formData.entries())
     console.log('Form submitted', formDataEntries)
-    // You can also redirect or perform other actions based on the form data
 
-    // example: add location to the URL
-    const location = formDataEntries['location'] as string
+    const location = (formDataEntries['pickupLocation'] || '') as string
+    const date = (formDataEntries['moveDate'] || '') as string
+    const type = (formDataEntries['moveType'] || '') as string
+
     let url = '/add-listing/1'
-    if (location) {
-      url = url + `?location=${encodeURIComponent(location)}`
-    }
+    const params = new URLSearchParams()
+    if (location) params.set('location', location)
+    if (date) params.set('moveDate', date)
+    if (type) params.set('moveType', type)
+    const qs = params.toString()
+    if (qs) url = url + `?${qs}`
     router.push(url)
   }
 
-  //
-  const totalGuests = (guestInput.guestAdults || 0) + (guestInput.guestChildren || 0) + (guestInput.guestInfants || 0)
-  const guestStringConverted = totalGuests
-    ? `${totalGuests} ${T['HeroSearchForm']['Guests']}`
-    : T['HeroSearchForm']['Add guests']
+  const formatDateDisplay = (date: Date | null) => {
+    if (!date) return T['HeroSearchForm']['Add dates']
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    })
+  }
 
   return (
     <Form id="form-hero-search-form-mobile" action={handleFormSubmit} className="flex w-full flex-col gap-y-3">
-      {/*  LOCATION */}
+      {/* PICKUP LOCATION */}
       <FieldPanelContainer
         isActive={fieldNameShow === 'location'}
         headingOnClick={() => setFieldNameShow('location')}
         headingTitle={T['HeroSearchForm']['Where']}
-        headingValue={locationInputTo || T['HeroSearchForm']['Location']}
+        headingValue={locationInput || 'Pickup location'}
       >
         <LocationInput
-          defaultValue={locationInputTo}
+          defaultValue={locationInput}
+          headingText="Where are you moving from?"
+          imputName="pickupLocation"
           onChange={(value) => {
-            setLocationInputTo(value)
+            setLocationInput(value)
             setFieldNameShow('dates')
           }}
         />
       </FieldPanelContainer>
 
-      {/* DATE RANGE  */}
+      {/* MOVE DATE (Single Date) */}
       <FieldPanelContainer
         isActive={fieldNameShow === 'dates'}
         headingOnClick={() => setFieldNameShow('dates')}
         headingTitle={T['HeroSearchForm']['When']}
-        headingValue={startDate ? converSelectedDateToString([startDate, endDate]) : T['HeroSearchForm']['Add dates']}
+        headingValue={formatDateDisplay(moveDate)}
       >
-        <DatesRangeInput defaultStartDate={startDate} defaultEndDate={endDate} onChange={onChangeDate} />
+        <SingleDateInput
+          defaultDate={moveDate}
+          headingText="When is your move?"
+          inputName="moveDate"
+          onChange={(date) => {
+            setMoveDate(date)
+            if (date) setFieldNameShow('moveType')
+          }}
+        />
       </FieldPanelContainer>
 
-      {/* GUEST NUMBER */}
+      {/* MOVE TYPE */}
       <FieldPanelContainer
-        isActive={fieldNameShow === 'guests'}
-        headingOnClick={() => setFieldNameShow('guests')}
-        headingTitle={T['HeroSearchForm']['Who']}
-        headingValue={guestStringConverted}
+        isActive={fieldNameShow === 'moveType'}
+        headingOnClick={() => setFieldNameShow('moveType')}
+        headingTitle="Move Type"
+        headingValue={moveType ? MOVE_TYPE_LABELS[moveType] : 'Select type'}
       >
-        <GuestsInput defaultValue={guestInput} onChange={setGuestInput} />
+        <MoveTypeInput
+          defaultValue={moveType}
+          onChange={(value) => {
+            setMoveType(value)
+          }}
+        />
       </FieldPanelContainer>
     </Form>
   )

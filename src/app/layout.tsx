@@ -27,10 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
         <ThemeProvider>
           <div>
-            {/* Move search provider makes the quick booking controlled across pages */}
             <MoveSearchProvider>{children}</MoveSearchProvider>
-
-            {/* For Chisfis's demo  -- you can remove it  */}
             <CustomizeControl />
           </div>
         </ThemeProvider>

@@ -10,17 +10,31 @@ import DatePicker from 'react-datepicker'
 
 interface Props {
   className?: string
+  isSingleDate?: boolean
+  label?: string
+  description?: string
+  inputName?: string
 }
 
-const DatesRangeInputPopover: FC<Props> = ({ className = 'flex-1' }) => {
-  const [startDate, setStartDate] = useState<Date | null>(new Date('2025/02/02'))
-  const [endDate, setEndDate] = useState<Date | null>(new Date('2025/02/06'))
-  //
+const DatesRangeInputPopover: FC<Props> = ({
+  className = 'flex-1',
+  isSingleDate = false,
+  label,
+  description,
+  inputName = 'moveDate',
+}) => {
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
 
-  const onChangeDate = (dates: [Date | null, Date | null]) => {
-    const [start, end] = dates
-    setStartDate(start)
-    setEndDate(end)
+  const onChangeDate = (dates: [Date | null, Date | null] | Date | null) => {
+    if (isSingleDate) {
+      setStartDate(dates as Date | null)
+      setEndDate(null)
+    } else {
+      const [start, end] = dates as [Date | null, Date | null]
+      setStartDate(start)
+      setEndDate(end)
+    }
   }
 
   const renderInput = () => {
@@ -34,8 +48,8 @@ const DatesRangeInputPopover: FC<Props> = ({ className = 'flex-1' }) => {
             {startDate?.toLocaleDateString('en-US', {
               month: 'short',
               day: '2-digit',
-            }) || 'Add dates'}
-            {endDate
+            }) || label || 'Add date'}
+            {endDate && !isSingleDate
               ? ' - ' +
                 endDate?.toLocaleDateString('en-US', {
                   month: 'short',
@@ -44,7 +58,7 @@ const DatesRangeInputPopover: FC<Props> = ({ className = 'flex-1' }) => {
               : ''}
           </span>
           <span className="mt-1 block text-sm leading-none font-light text-neutral-400">
-            {T['HeroSearchForm']['CheckIn']} - {T['HeroSearchForm']['CheckOut']}
+            {description || (isSingleDate ? 'Select date' : `${T['HeroSearchForm']['CheckIn']} - ${T['HeroSearchForm']['CheckOut']}`)}
           </span>
         </div>
       </>
@@ -74,18 +88,31 @@ const DatesRangeInputPopover: FC<Props> = ({ className = 'flex-1' }) => {
               className="absolute start-auto -end-2 top-full z-10 mt-3 w-[calc(100%+1rem)] transition duration-150 data-closed:translate-y-1 data-closed:opacity-0 lg:w-3xl xl:-end-10"
             >
               <div className="overflow-hidden rounded-3xl bg-white py-5 shadow-lg ring-1 ring-black/5 sm:p-8 dark:bg-neutral-800">
-                <DatePicker
-                  selected={startDate}
-                  onChange={onChangeDate}
-                  startDate={startDate}
-                  endDate={endDate}
-                  selectsRange
-                  monthsShown={2}
-                  showPopperArrow={false}
-                  inline
-                  renderCustomHeader={(p) => <DatePickerCustomHeaderTwoMonth {...p} />}
-                  renderDayContents={(day, date) => <DatePickerCustomDay dayOfMonth={day} date={date} />}
-                />
+                {isSingleDate ? (
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date) => onChangeDate(date)}
+                    monthsShown={2}
+                    showPopperArrow={false}
+                    inline
+                    minDate={new Date()}
+                    renderCustomHeader={(p) => <DatePickerCustomHeaderTwoMonth {...p} />}
+                    renderDayContents={(day, date) => <DatePickerCustomDay dayOfMonth={day} date={date} />}
+                  />
+                ) : (
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(dates) => onChangeDate(dates as [Date | null, Date | null])}
+                    startDate={startDate}
+                    endDate={endDate}
+                    selectsRange
+                    monthsShown={2}
+                    showPopperArrow={false}
+                    inline
+                    renderCustomHeader={(p) => <DatePickerCustomHeaderTwoMonth {...p} />}
+                    renderDayContents={(day, date) => <DatePickerCustomDay dayOfMonth={day} date={date} />}
+                  />
+                )}
               </div>
             </PopoverPanel>
           </>
@@ -93,8 +120,10 @@ const DatesRangeInputPopover: FC<Props> = ({ className = 'flex-1' }) => {
       </Popover>
 
       {/* inputs */}
-      <input type="hidden" name="startDate" value={startDate ? startDate.toISOString() : ''} />
-      <input type="hidden" name="endDate" value={endDate ? endDate.toISOString() : ''} />
+      <input type="hidden" name={inputName} value={startDate ? startDate.toISOString().split('T')[0] : ''} />
+      {!isSingleDate && (
+        <input type="hidden" name="endDate" value={endDate ? endDate.toISOString().split('T')[0] : ''} />
+      )}
     </>
   )
 }
