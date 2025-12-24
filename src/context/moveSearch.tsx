@@ -144,8 +144,10 @@ export type CustomItem = {
 
 type MoveSearchState = {
   pickupLocation: string
+  dropoffLocation: string
   moveDate: string | null // ISO date YYYY-MM-DD
   moveType: MoveTypeKey | null
+  isInstantMove: boolean // true for instant move, false for scheduled
 
   // Step 1 fields
   homeType: HomeTypeKey | null
@@ -212,8 +214,10 @@ type MoveSearchState = {
 
 type MoveSearchActions = {
   setPickupLocation: (v: string) => void
+  setDropoffLocation: (v: string) => void
   setMoveDate: (d: string | null) => void
   setMoveType: (t: MoveTypeKey | null) => void
+  setIsInstantMove: (b: boolean) => void
 
   setHomeType: (h: HomeTypeKey | null) => void
   setFloorLevel: (f: FloorLevelKey | null) => void
@@ -291,8 +295,10 @@ type MoveSearchActions = {
 
 const defaultState: MoveSearchState = {
   pickupLocation: '',
+  dropoffLocation: '',
   moveDate: null,
   moveType: null,
+  isInstantMove: false,
   homeType: null,
   floorLevel: null,
   elevatorAvailable: false,
@@ -369,8 +375,10 @@ const defaultState: MoveSearchState = {
 const MoveSearchContext = createContext<MoveSearchState & MoveSearchActions>({
   ...defaultState,
   setPickupLocation: () => {},
+  setDropoffLocation: () => {},
   setMoveDate: () => {},
   setMoveType: () => {},
+  setIsInstantMove: () => {},
   setHomeType: () => {},
   setFloorLevel: () => {},
   setElevatorAvailable: () => {},
@@ -444,8 +452,10 @@ const MoveSearchContext = createContext<MoveSearchState & MoveSearchActions>({
 
 export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) => {
   const [pickupLocation, setPickupLocation] = useState<string>(defaultState.pickupLocation)
+  const [dropoffLocation, setDropoffLocation] = useState<string>(defaultState.dropoffLocation)
   const [moveDate, setMoveDate] = useState<string | null>(defaultState.moveDate)
   const [moveType, setMoveType] = useState<MoveTypeKey | null>(defaultState.moveType)
+  const [isInstantMove, setIsInstantMove] = useState<boolean>(defaultState.isInstantMove)
 
   const [homeType, setHomeType] = useState<HomeTypeKey | null>(defaultState.homeType)
   const [floorLevel, setFloorLevel] = useState<FloorLevelKey | null>(defaultState.floorLevel)
@@ -673,8 +683,10 @@ export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) 
     <MoveSearchContext.Provider
       value={{
         pickupLocation,
+        dropoffLocation,
         moveDate,
         moveType,
+        isInstantMove,
         homeType,
         floorLevel,
         elevatorAvailable,
@@ -733,8 +745,10 @@ export const MoveSearchProvider = ({ children }: { children: React.ReactNode }) 
         storedMoves,
 
         setPickupLocation,
+        setDropoffLocation,
         setMoveDate,
         setMoveType,
+        setIsInstantMove,
         setHomeType,
         setFloorLevel,
         setElevatorAvailable,

@@ -10,6 +10,9 @@ import { useEffect, Suspense } from 'react'
 import FormItem from '../FormItem'
 import { useMoveSearch } from '@/context/moveSearch'
 import { useState } from 'react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { CalendarDaysIcon } from '@heroicons/react/24/outline'
 
 const PageContent = () => {
   const router = useRouter()
@@ -25,6 +28,7 @@ const PageContent = () => {
 
     // basic validation
     const errors: Record<string, string> = {}
+    if (!moveDate) errors.moveDate = 'Please select a move date'
     if (!formObject['homeType']) errors.homeType = 'Please select a home type'
     if (!formObject['floorLevel']) errors.floorLevel = 'Please select a floor level'
     if (!formObject['parkingSituation']) errors.parkingSituation = 'Please select a parking situation'
@@ -44,37 +48,98 @@ const PageContent = () => {
   }
 
   const {
+    moveDate,
     homeType,
     floorLevel,
     elevatorAvailable,
     parkingSituation,
+    setMoveDate,
     setHomeType,
     setFloorLevel,
     setElevatorAvailable,
     setParkingSituation,
   } = useMoveSearch()
 
-  const { setPickupLocation, setMoveDate, setMoveType } = useMoveSearch()
+  const { pickupLocation, dropoffLocation, setPickupLocation, setDropoffLocation, setMoveType } = useMoveSearch()
   const searchParams = useSearchParams()
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   // Read incoming query params and seed provider (if present)
   useEffect(() => {
-    const loc = searchParams.get('location')
-    const md = searchParams.get('moveDate')
+    const pickup = searchParams.get('pickup')
+    const dropoff = searchParams.get('dropoff')
     const mt = searchParams.get('moveType')
-    if (loc) setPickupLocation(loc)
-    if (md) setMoveDate(md)
+    if (pickup) setPickupLocation(pickup)
+    if (dropoff) setDropoffLocation(dropoff)
     if (mt) setMoveType((mt as any) || null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Convert moveDate string to Date object for DatePicker
+  const selectedDate = moveDate ? new Date(moveDate) : null
+
+  const handleDateChange = (date: Date | null) => {
+    if (date) {
+      // Store as ISO date string YYYY-MM-DD
+      setMoveDate(date.toISOString().split('T')[0])
+    } else {
+      setMoveDate(null)
+    }
+  }
 
   return (
     <>
       <h1 className="text-2xl font-semibold">STEP 1 — Move Details</h1>
       <div className="w-14 border-b border-neutral-200 dark:border-neutral-700"></div>
+
+      {/* Location Summary */}
+      {(pickupLocation || dropoffLocation) && (
+        <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
+          <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-3">Your move route</h3>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <div className="w-0.5 h-6 bg-neutral-300 dark:bg-neutral-600" />
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">From</p>
+                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                  {pickupLocation || 'Not specified'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">To</p>
+                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                  {dropoffLocation || 'Not specified'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FORM */}
       <Form id="add-listing-form" action={handleSubmitForm} className="flex flex-col gap-y-8">
+        {/* Move Date */}
+        <FormItem label="Move date" desccription="When would you like to move?">
+          <div className="relative">
+            <DatePicker
+              selected={selectedDate}
+              onChange={handleDateChange}
+              minDate={new Date()}
+              dateFormat="EEEE, MMMM d, yyyy"
+              placeholderText="Select your move date"
+              className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 pl-12 text-sm font-medium focus:border-primary-500 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+              calendarClassName="!rounded-2xl !border-neutral-200 dark:!border-neutral-700 !shadow-xl"
+              wrapperClassName="w-full"
+            />
+            <CalendarDaysIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 pointer-events-none" />
+          </div>
+          {formErrors.moveDate && <div className="text-sm text-red-600 mt-2">{formErrors.moveDate}</div>}
+        </FormItem>
+
         {/* Home type */}
         <FormItem label="Home type" desccription="Select the type of home or space to move">
           <Select
@@ -146,15 +211,9 @@ const PageContent = () => {
         </FormItem>
 
         {/* Hidden compatibility inputs: ensure previous flows receive these values in formData */}
-        <input type="hidden" name="pickupLocation" value={String((useMoveSearch() as any).pickupLocation || '')} />
-        <input type="hidden" name="moveDate" value={String((useMoveSearch() as any).moveDate || '')} />
-        <input type="hidden" name="moveType" value={String((useMoveSearch() as any).moveType || '')} />
-
-        {/* <div className="pt-4 border-t border-neutral-100 flex justify-end">
-          <button type="submit" className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded">
-            Continue
-          </button>
-        </div> */}
+        <input type="hidden" name="pickupLocation" value={pickupLocation || ''} />
+        <input type="hidden" name="dropoffLocation" value={dropoffLocation || ''} />
+        <input type="hidden" name="moveDate" value={moveDate || ''} />
       </Form>
     </>
   )

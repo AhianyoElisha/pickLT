@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import Form from 'next/form'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ButtonSubmit, DateRangeField, GuestNumberField, LocationInputField, VerticalDividerLine } from './ui'
+import { ButtonSubmit, GuestNumberField, LocationInputField, VerticalDividerLine } from './ui'
 
 interface Props {
   className?: string
@@ -14,9 +14,9 @@ interface Props {
 export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
   const router = useRouter()
 
-  // Prefetch the stay categories page to improve performance
+  // Prefetch the move choice page to improve performance
   useEffect(() => {
-    router.prefetch('/add-listing/1')
+    router.prefetch('/move-choice')
   }, [router])
 
   const [moveType, setMoveType] = useState<string | null>(null)
@@ -25,14 +25,14 @@ export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
     const formDataEntries = Object.fromEntries(formData.entries())
     console.log('Form submitted', formDataEntries)
 
-    const location = (formDataEntries['pickupLocation'] || formDataEntries['location'] || '') as string
-    const moveDate = (formDataEntries['moveDate'] || '') as string
+    const pickupLocation = (formDataEntries['pickupLocation'] || '') as string
+    const dropoffLocation = (formDataEntries['dropoffLocation'] || '') as string
     const mt = (formDataEntries['moveType'] || moveType || '') as string
 
-    let url = '/add-listing/1'
+    let url = '/move-choice'
     const params = new URLSearchParams()
-    if (location) params.set('location', location)
-    if (moveDate) params.set('moveDate', moveDate)
+    if (pickupLocation) params.set('pickup', pickupLocation)
+    if (dropoffLocation) params.set('dropoff', dropoffLocation)
     if (mt) params.set('moveType', mt)
     const qs = params.toString()
     if (qs) url = url + `?${qs}`
@@ -57,13 +57,12 @@ export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
         inputName="pickupLocation"
       />
       <VerticalDividerLine />
-      <DateRangeField
+      <LocationInputField
         className="hero-search-form__field-before hero-search-form__field-after flex-4/12"
         fieldStyle={formStyle}
-        isOnlySingleDate
-        label="Move date"
-        description="Select your move date"
-        hiddenInputName="moveDate"
+        placeholder="Where are you moving to?"
+        description="Drop-off location"
+        inputName="dropoffLocation"
       />
       <VerticalDividerLine />
       <GuestNumberField

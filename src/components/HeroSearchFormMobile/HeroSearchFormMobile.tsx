@@ -43,7 +43,7 @@ const HeroSearchFormMobile = ({ className }: { className?: string }) => {
         <div className="ms-3 flex-1 overflow-hidden text-start">
           <span className="block text-sm font-medium">Plan your move</span>
           <span className="mt-0.5 block text-xs font-light text-neutral-500 dark:text-neutral-400">
-            <span className="line-clamp-1">Location • Date • Move type</span>
+            <span className="line-clamp-1">From • To • Move type</span>
           </span>
         </div>
 
