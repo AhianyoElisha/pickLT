@@ -434,7 +434,10 @@ const InstantMovePage = () => {
                 Cancel move
               </ButtonSecondary>
             ) : (
-              <ButtonPrimary href="/checkout" className="w-full shadow-lg">
+              <ButtonPrimary 
+                href={`/checkout${routeInfo ? `?distance=${routeInfo.distance}&duration=${routeInfo.duration}` : ''}`} 
+                className="w-full shadow-lg"
+              >
                 Proceed to checkout
               </ButtonPrimary>
             )}
