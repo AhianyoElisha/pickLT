@@ -213,7 +213,7 @@ const DashboardPage = () => {
             View all
           </Link>
         </div>
-        <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {recentMoves.map((move) => (
             <div
               key={move.id}
