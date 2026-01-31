@@ -15,11 +15,11 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s - Chisfis',
-    default: 'Chisfis - Booking online React Next.js template',
+    template: '%s - PickLT',
+    default: 'PickLT - Booking online React Next.js template',
   },
   description: 'Booking online & rental online Next.js Template',
-  keywords: ['Chisfis', 'Booking online', 'Rental online', 'React Next.js template'],
+  keywords: ['PickLT', 'Booking online', 'Rental online', 'React Next.js template'],
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

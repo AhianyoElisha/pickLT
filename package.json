@@ -1,6 +1,6 @@
 {
-  "name": "chisfis-template",
-  "description": "A template for creating a Next.js application with Tailwind CSS and TypeScript.",
+  "name": "picklt",
+  "description": "PickLT - A modern booking and rental platform built with Next.js, Tailwind CSS and TypeScript.",
   "version": "2.1.0",
   "private": true,
   "scripts": {
