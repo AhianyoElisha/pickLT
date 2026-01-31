@@ -10,7 +10,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
       <div>
         <div className="container">
           {children}
-          <SectionOurFeatures rightImg={featuresImg} type="type2" className="py-24 lg:py-32" />
+          {/* <SectionOur Features rightImg={featuresImg} type="type2" className="py-24 lg:py-32" /> */}
         </div>
       </div>
     </ApplicationLayout>

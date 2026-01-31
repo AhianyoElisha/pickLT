@@ -22,27 +22,27 @@ import { ReactNode, useState } from 'react'
 const MOVER_NAV_ITEMS = [
   {
     name: 'Dashboard',
-    href: '/mover',
+    href: '/dashboard',
     icon: HomeIcon,
   },
   {
     name: 'Available Moves',
-    href: '/mover/available-moves',
+    href: '/available-moves',
     icon: MapIcon,
   },
   {
-    name: 'My Bookings',
-    href: '/mover/bookings',
-    icon: CalendarDaysIcon,
-  },
-  {
     name: 'My Crew',
-    href: '/mover/crew',
+    href: '/my-crew',
     icon: UserGroupIcon,
   },
   {
+    name: 'Earnings',
+    href: '/earnings',
+    icon: CalendarDaysIcon,
+  },
+  {
     name: 'Settings',
-    href: '/mover/settings',
+    href: '/settings',
     icon: Cog6ToothIcon,
   },
 ]
@@ -50,27 +50,27 @@ const MOVER_NAV_ITEMS = [
 const MOBILE_NAV_ITEMS = [
   {
     name: 'Home',
-    href: '/mover',
+    href: '/dashboard',
     icon: HomeIcon,
   },
   {
     name: 'Moves',
-    href: '/mover/available-moves',
+    href: '/available-moves',
     icon: MapIcon,
   },
   {
-    name: 'Bookings',
-    href: '/mover/bookings',
-    icon: CalendarDaysIcon,
-  },
-  {
     name: 'Crew',
-    href: '/mover/crew',
+    href: '/my-crew',
     icon: UserGroupIcon,
   },
   {
+    name: 'Earnings',
+    href: '/earnings',
+    icon: CalendarDaysIcon,
+  },
+  {
     name: 'Profile',
-    href: '/mover/settings',
+    href: '/settings',
     icon: UserCircleIcon,
   },
 ]

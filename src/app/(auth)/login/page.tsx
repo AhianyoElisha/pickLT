@@ -6,9 +6,10 @@ import Input from '@/shared/Input'
 import Logo from '@/shared/Logo'
 import T from '@/utils/getT'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
 import type { JSX } from 'react'
+import { useAuth } from '@/context/auth'
 
 const socials: {
   name: string
@@ -43,11 +44,64 @@ const socials: {
 
 const LoginContent = () => {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const { login } = useAuth()
   const userType = searchParams.get('type') || 'client'
   const isMover = userType === 'mover'
 
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
   const pageTitle = isMover ? 'Mover Login' : 'Client Login'
   const signupLink = isMover ? '/signup?type=mover' : '/signup?type=client'
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      // TODO: Replace with actual API call
+      // For now, simulate login with mock data
+      if (!email || !password) {
+        setError('Please enter email and password')
+        setIsLoading(false)
+        return
+      }
+
+      // Mock user data - in real app, this would come from API
+      const mockUser = {
+        id: Date.now().toString(),
+        fullName: email.split('@')[0],
+        email: email,
+        phone: '',
+        userType: isMover ? 'mover' as const : 'client' as const,
+        ...(isMover && {
+          moverDetails: {
+            rating: 4.8,
+            totalMoves: 150,
+            yearsExperience: 5,
+            verified: true,
+          },
+        }),
+      }
+
+      login(mockUser)
+
+      // Redirect based on user type
+      if (isMover) {
+        router.push('/dashboard')
+      } else {
+        router.push('/')
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="container">
@@ -88,11 +142,25 @@ const LoginContent = () => {
           </span>
           <div className="absolute top-1/2 left-0 w-full -translate-y-1/2 border border-neutral-100 dark:border-neutral-800"></div>
         </div>
+        {/* Error Message */}
+        {error && (
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
         {/* FORM */}
-        <form className="grid grid-cols-1 gap-6" action="#" method="post">
+        <form className="grid grid-cols-1 gap-6" onSubmit={handleSubmit}>
           <Field className="block">
             <Label className="text-neutral-800 dark:text-neutral-200">{T['login']['Email address']}</Label>
-            <Input type="email" placeholder="example@example.com" className="mt-1" />
+            <Input 
+              type="email" 
+              placeholder="example@example.com" 
+              className="mt-1" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </Field>
           <Field className="block">
             <div className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
@@ -101,9 +169,17 @@ const LoginContent = () => {
                 {T['login']['Forgot password?']}
               </Link>
             </div>
-            <Input type="password" className="mt-1" />
+            <Input 
+              type="password" 
+              className="mt-1" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </Field>
-          <ButtonPrimary type="submit">Login</ButtonPrimary>
+          <ButtonPrimary type="submit" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
+          </ButtonPrimary>
         </form>
 
         {/* ==== */}

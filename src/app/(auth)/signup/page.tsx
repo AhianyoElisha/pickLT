@@ -6,10 +6,11 @@ import Input from '@/shared/Input'
 import Logo from '@/shared/Logo'
 import T from '@/utils/getT'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense, useState, useRef } from 'react'
 import type { JSX } from 'react'
 import { PhotoIcon, TruckIcon, DocumentIcon, UserCircleIcon, CameraIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '@/context/auth'
 
 const socials: {
   name: string
@@ -44,6 +45,8 @@ const socials: {
 
 function SignupContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const { login } = useAuth()
   const type = searchParams.get('type') || 'client'
   const isMover = type === 'mover'
 
@@ -53,6 +56,8 @@ function SignupContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
   // Mover-specific state
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
@@ -90,25 +95,62 @@ function SignupContent() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement actual signup logic
-    console.log('Signup submitted', {
-      type,
-      fullName,
-      contactNumber,
-      email,
-      password,
-      ...(isMover && {
-        profilePhoto,
-        driversLicense,
-        vehicleBrand,
-        vehicleModel,
-        vehicleRegistration,
-        vehicleYear,
-        vehicleCapacity,
-      }),
-    })
+    setError('')
+
+    // Validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // TODO: Replace with actual API call
+      // For now, simulate signup with mock data
+      const newUser = {
+        id: Date.now().toString(),
+        fullName,
+        email,
+        phone: contactNumber,
+        userType: isMover ? 'mover' as const : 'client' as const,
+        ...(isMover && {
+          profilePhoto: profilePhoto || undefined,
+          moverDetails: {
+            driversLicense: driversLicense || undefined,
+            vehicleBrand: vehicleBrand || undefined,
+            vehicleModel: vehicleModel || undefined,
+            vehicleYear: vehicleYear || undefined,
+            vehicleCapacity: vehicleCapacity || undefined,
+            vehicleRegistration: vehicleRegistration || undefined,
+            rating: 0,
+            totalMoves: 0,
+            yearsExperience: 0,
+            verified: false,
+          },
+        }),
+      }
+
+      login(newUser)
+
+      // Redirect based on user type
+      if (isMover) {
+        router.push('/dashboard')
+      } else {
+        router.push('/')
+      }
+    } catch (err) {
+      setError('Signup failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -153,6 +195,13 @@ function SignupContent() {
               <div className="absolute top-1/2 left-0 w-full -translate-y-1/2 transform border border-neutral-100 dark:border-neutral-800"></div>
             </div>
           </>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+            {error}
+          </div>
         )}
 
         {/* FORM */}
@@ -403,7 +452,9 @@ function SignupContent() {
             </>
           )}
 
-          <ButtonPrimary type="submit">{T['common']['Continue']}</ButtonPrimary>
+          <ButtonPrimary type="submit" disabled={isLoading}>
+            {isLoading ? 'Creating account...' : T['common']['Continue']}
+          </ButtonPrimary>
         </form>
 
         {/* ==== */}
