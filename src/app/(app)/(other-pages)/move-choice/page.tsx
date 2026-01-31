@@ -47,12 +47,12 @@ const MoveChoiceContent = () => {
 
   useEffect(() => {
     router.prefetch('/add-listing/1')
-    router.prefetch('/instant-move')
+    router.prefetch('/instant-move/inventory')
   }, [router])
 
   const handleInstantMove = () => {
     setIsInstantMove(true)
-    router.push('/instant-move')
+    router.push('/instant-move/inventory')
   }
 
   const handleBookLater = () => {

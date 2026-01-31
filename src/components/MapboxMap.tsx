@@ -12,6 +12,11 @@ export interface MapCoordinates {
   longitude: number
 }
 
+export interface RouteInfo {
+  distance: number // in meters
+  duration: number // in seconds
+}
+
 export interface MapMarker {
   id: string
   coordinates: MapCoordinates
@@ -27,6 +32,7 @@ interface MapboxMapProps {
   moverCoordinates?: MapCoordinates
   showRoute?: boolean
   onMapLoad?: (map: mapboxgl.Map) => void
+  onRouteCalculated?: (routeInfo: RouteInfo) => void
 }
 
 export const MapboxMap = ({
@@ -36,6 +42,7 @@ export const MapboxMap = ({
   moverCoordinates,
   showRoute = true,
   onMapLoad,
+  onRouteCalculated,
 }: MapboxMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
@@ -71,7 +78,33 @@ export const MapboxMap = ({
       map.current?.remove()
       map.current = null
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only init once, coordinates update handled separately
+
+  // Center map on coordinates when they become available
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return
+    
+    // If we have pickup coordinates, fly to them
+    if (pickupCoordinates && dropoffCoordinates) {
+      // Fit to both points
+      const bounds = new mapboxgl.LngLatBounds()
+      bounds.extend([pickupCoordinates.longitude, pickupCoordinates.latitude])
+      bounds.extend([dropoffCoordinates.longitude, dropoffCoordinates.latitude])
+      
+      map.current.fitBounds(bounds, {
+        padding: { top: 100, bottom: 200, left: 50, right: 50 },
+        maxZoom: 14,
+        duration: 1000,
+      })
+    } else if (pickupCoordinates) {
+      map.current.flyTo({
+        center: [pickupCoordinates.longitude, pickupCoordinates.latitude],
+        zoom: 13,
+        duration: 1000,
+      })
+    }
+  }, [pickupCoordinates, dropoffCoordinates, mapLoaded])
 
   // Create custom marker element
   const createMarkerElement = (type: 'pickup' | 'dropoff' | 'mover', pulse?: boolean) => {
@@ -168,6 +201,13 @@ export const MapboxMap = ({
         
         if (data.routes && data.routes[0]) {
           const route = data.routes[0].geometry
+          const distance = data.routes[0].distance // in meters
+          const duration = data.routes[0].duration // in seconds
+
+          // Notify parent component about route info
+          if (onRouteCalculated) {
+            onRouteCalculated({ distance, duration })
+          }
 
           // Remove existing route layer if it exists
           if (map.current?.getSource('route')) {
@@ -206,7 +246,7 @@ export const MapboxMap = ({
     }
 
     getRoute()
-  }, [pickupCoordinates, dropoffCoordinates, showRoute, mapLoaded])
+  }, [pickupCoordinates, dropoffCoordinates, showRoute, mapLoaded, onRouteCalculated])
 
   // Update mover position smoothly
   useEffect(() => {

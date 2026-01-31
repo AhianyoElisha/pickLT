@@ -32,10 +32,12 @@ export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
   const [dropoffData, setDropoffData] = useState<LocationSuggestion | null>(null)
 
   const handlePickupChange = (location: LocationSuggestion | null) => {
+    console.log('StaySearchForm - Pickup changed:', location)
     setPickupData(location)
     if (location) {
       setPickupLocation(location.fullAddress)
       if (location.coordinates) {
+        console.log('StaySearchForm - Setting pickup coordinates:', location.coordinates)
         setPickupCoordinates({
           latitude: location.coordinates.latitude,
           longitude: location.coordinates.longitude,
@@ -48,10 +50,12 @@ export const StaySearchForm = ({ className, formStyle = 'default' }: Props) => {
   }
 
   const handleDropoffChange = (location: LocationSuggestion | null) => {
+    console.log('StaySearchForm - Dropoff changed:', location)
     setDropoffData(location)
     if (location) {
       setDropoffLocation(location.fullAddress)
       if (location.coordinates) {
+        console.log('StaySearchForm - Setting dropoff coordinates:', location.coordinates)
         setDropoffCoordinates({
           latitude: location.coordinates.latitude,
           longitude: location.coordinates.longitude,
