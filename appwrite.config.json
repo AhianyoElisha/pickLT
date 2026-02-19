@@ -57,7 +57,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/createmove"
         },
@@ -78,7 +78,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/calculateprice"
         },
@@ -99,7 +99,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/submitmoverprofile"
         },
@@ -120,7 +120,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/adminverifymover"
         },
@@ -141,7 +141,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/broadcastmoverequest"
         },
@@ -162,7 +162,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/updatemoverlocation"
         },
@@ -183,7 +183,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/updatemovestatus"
         },
@@ -204,7 +204,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/processpayment"
         },
@@ -225,7 +225,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/submitreview"
         },
@@ -246,7 +246,7 @@
             "enabled": true,
             "logging": true,
             "entrypoint": "src/main.js",
-            "commands": "npm install",
+            "commands": "npm install --legacy-peer-deps",
             "ignore": "node_modules,.npm",
             "path": "functions/sendnotification"
         }
