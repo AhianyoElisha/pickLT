@@ -5,9 +5,33 @@ import { CalendarDaysIcon, CurrencyEuroIcon, TruckIcon, UsersIcon, ClockIcon, Ma
 import { Badge } from '@/shared/Badge'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+
+interface DashboardData {
+  activeMoves: number
+  completedThisMonth: number
+  earningsThisMonth: number
+  crewCount: number
+  pendingRequests: number
+  recentMoves: RecentMoveFromApi[]
+}
+
+interface RecentMoveFromApi {
+  $id: string
+  pickupLabel: string
+  pickupAddress: string
+  dropoffLabel: string
+  dropoffAddress: string
+  scheduledDate: string
+  status: string
+  estimatedPrice: number
+  moveCategory: string
+  totalItems: number
+  routeDistanceMeters: number | null
+}
 
 interface RecentMove {
-  id: number
+  id: string
   pickup: string
   pickupAddress: string
   dropoff: string
@@ -22,77 +46,75 @@ interface RecentMove {
 
 const DashboardPage = () => {
   const { user, crewMembers } = useAuth()
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await fetch('/api/mover/dashboard')
+        if (res.ok) {
+          const data = await res.json()
+          setDashboard(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDashboard()
+  }, [])
+
+  const mapApiMoveStatus = (status: string): RecentMove['status'] => {
+    if (status === 'completed') return 'completed'
+    if (status === 'cancelled_by_client' || status === 'cancelled_by_mover') return 'cancelled'
+    if (status === 'draft' || status === 'pending_payment') return 'pending'
+    return 'in_progress'
+  }
+
+  const recentMoves: RecentMove[] = (dashboard?.recentMoves || []).map((m) => ({
+    id: m.$id,
+    pickup: m.pickupLabel || 'Pickup',
+    pickupAddress: m.pickupAddress || '',
+    dropoff: m.dropoffLabel || 'Dropoff',
+    dropoffAddress: m.dropoffAddress || '',
+    date: m.scheduledDate ? new Date(m.scheduledDate).toLocaleDateString('en-DE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+    status: mapApiMoveStatus(m.status),
+    amount: m.estimatedPrice || 0,
+    moveType: m.moveCategory ? m.moveCategory.charAt(0).toUpperCase() + m.moveCategory.slice(1) : 'Light',
+    itemCount: m.totalItems || 0,
+    distance: m.routeDistanceMeters ? `${(m.routeDistanceMeters / 1000).toFixed(1)} km` : '—',
+  }))
 
   const stats = [
     {
       name: 'Available Moves',
-      value: 12,
+      value: dashboard?.activeMoves ?? 0,
       icon: TruckIcon,
       href: '/available-moves',
       color: 'bg-blue-500',
     },
     {
       name: 'Completed This Month',
-      value: 28,
+      value: dashboard?.completedThisMonth ?? 0,
       icon: CalendarDaysIcon,
       href: '#',
       color: 'bg-green-500',
     },
     {
       name: 'Crew Members',
-      value: crewMembers?.length || 0,
+      value: dashboard?.crewCount ?? crewMembers?.length ?? 0,
       icon: UsersIcon,
       href: '/my-crew',
       color: 'bg-purple-500',
     },
     {
       name: 'Earnings This Month',
-      value: '€2,450',
+      value: `€${(dashboard?.earningsThisMonth ?? 0).toLocaleString()}`,
       icon: CurrencyEuroIcon,
       href: '/earnings',
       color: 'bg-yellow-500',
-    },
-  ]
-
-  const recentMoves: RecentMove[] = [
-    {
-      id: 1,
-      pickup: 'Berlin Mitte',
-      pickupAddress: 'Alexanderplatz 1, 10178 Berlin',
-      dropoff: 'Berlin Kreuzberg',
-      dropoffAddress: 'Oranienstraße 25, 10999 Berlin',
-      date: 'Today, 14:30',
-      status: 'completed',
-      amount: 85,
-      moveType: 'Light',
-      itemCount: 15,
-      distance: '4.2 km',
-    },
-    {
-      id: 2,
-      pickup: 'Berlin Prenzlauer Berg',
-      pickupAddress: 'Schönhauser Allee 80, 10439 Berlin',
-      dropoff: 'Berlin Charlottenburg',
-      dropoffAddress: 'Kantstraße 45, 10627 Berlin',
-      date: 'Today, 10:00',
-      status: 'completed',
-      amount: 120,
-      moveType: 'Regular',
-      itemCount: 32,
-      distance: '8.5 km',
-    },
-    {
-      id: 3,
-      pickup: 'Berlin Wedding',
-      pickupAddress: 'Müllerstraße 120, 13353 Berlin',
-      dropoff: 'Berlin Tempelhof',
-      dropoffAddress: 'Tempelhofer Damm 70, 12101 Berlin',
-      date: 'Yesterday, 16:00',
-      status: 'completed',
-      amount: 95,
-      moveType: 'Light',
-      itemCount: 18,
-      distance: '10.2 km',
     },
   ]
 

@@ -17,13 +17,14 @@ import { useRouter } from 'next/navigation'
 import { useState, useRef } from 'react'
 
 const SettingsPage = () => {
-  const { user, updateUser, logout } = useAuth()
+  const { user, updateUser, logout, refreshProfile } = useAuth()
   const router = useRouter()
   const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [profileData, setProfileData] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
-    phone: '',
+    phone: user?.phone || '',
   })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -267,16 +268,35 @@ const SettingsPage = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  updateUser({
-                    fullName: profileData.fullName,
-                    email: profileData.email,
-                  })
-                  setIsEditingProfile(false)
+                onClick={async () => {
+                  setIsSaving(true)
+                  try {
+                    const res = await fetch('/api/user/profile', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        fullName: profileData.fullName,
+                        phone: profileData.phone,
+                      }),
+                    })
+                    if (res.ok) {
+                      updateUser({
+                        fullName: profileData.fullName,
+                        phone: profileData.phone,
+                      })
+                      await refreshProfile()
+                    }
+                  } catch (err) {
+                    console.error('Failed to save profile:', err)
+                  } finally {
+                    setIsSaving(false)
+                    setIsEditingProfile(false)
+                  }
                 }}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-full font-medium hover:bg-primary-700 transition-colors"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-full font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
               >
-                Save
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

@@ -1,0 +1,1742 @@
+{
+    "projectId": "698fcc80001f0b5149d8",
+    "projectName": "PickLT",
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
+    "settings": {
+        "services": {
+            "account": true,
+            "avatars": true,
+            "databases": true,
+            "locale": true,
+            "health": true,
+            "storage": true,
+            "teams": true,
+            "users": true,
+            "sites": true,
+            "functions": true,
+            "graphql": true,
+            "messaging": true
+        },
+        "auth": {
+            "methods": {
+                "jwt": true,
+                "phone": true,
+                "invites": true,
+                "anonymous": true,
+                "email-otp": true,
+                "magic-url": true,
+                "email-password": true
+            },
+            "security": {
+                "duration": 31536000,
+                "limit": 0,
+                "sessionsLimit": 10,
+                "passwordHistory": 0,
+                "passwordDictionary": false,
+                "personalDataCheck": false,
+                "sessionAlerts": false,
+                "mockNumbers": []
+            }
+        }
+    },
+    "functions": [
+        {
+            "$id": "69959dce001b20e1acfe",
+            "name": "createmove",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-4gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/createmove"
+        },
+        {
+            "$id": "6995a5400007207f0693",
+            "name": "calculateprice",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-4gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/calculateprice"
+        },
+        {
+            "$id": "6995a57d00113613dea5",
+            "name": "submitmoverprofile",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-4gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/submitmoverprofile"
+        },
+        {
+            "$id": "6995a59c002bb897a9a7",
+            "name": "adminverifymover",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-4gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/adminverifymover"
+        },
+        {
+            "$id": "6995a5c10001b3e9740f",
+            "name": "broadcastmoverequest",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-2gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/broadcastmoverequest"
+        },
+        {
+            "$id": "6995a60b0039c1cd33b0",
+            "name": "updatemoverlocation",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-4gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/updatemoverlocation"
+        },
+        {
+            "$id": "6995a649003944a03dd0",
+            "name": "updatemovestatus",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-2gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/updatemovestatus"
+        },
+        {
+            "$id": "6995a66900354bc64f62",
+            "name": "processpayment",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-2gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/processpayment"
+        },
+        {
+            "$id": "6995a67e002eb3fa6e09",
+            "name": "submitreview",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-2gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/submitreview"
+        },
+        {
+            "$id": "6995a694001f4db08366",
+            "name": "sendnotification",
+            "runtime": "node-22",
+            "specification": "s-2vcpu-4gb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "ignore": "node_modules,.npm",
+            "path": "functions/sendnotification"
+        }
+    ],
+    "tablesDB": [
+        {
+            "$id": "6990885c000627570048",
+            "name": "PickLT",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "6991d955003932cb853b",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "users",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": "email"
+                },
+                {
+                    "key": "fullName",
+                    "type": "text",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "phone",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "profilePhoto",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "client",
+                        "mover",
+                        "admin"
+                    ]
+                },
+                {
+                    "key": "emailVerified",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "phoneVerified",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "mover_profiles",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991dd5b0022477fb75f",
+                    "relationType": "oneToOne",
+                    "twoWay": true,
+                    "twoWayKey": "userId",
+                    "onDelete": "setNull",
+                    "side": "child"
+                },
+                {
+                    "key": "moves",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "clientId",
+                    "onDelete": "setNull",
+                    "side": "child"
+                },
+                {
+                    "key": "reviews",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "69920b03000c5440c29e",
+                    "relationType": "oneToMany",
+                    "twoWay": false,
+                    "twoWayKey": "699513940023ac93b9df",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "6991dd5b0022477fb75f",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "mover_profiles",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991d955003932cb853b",
+                    "relationType": "oneToOne",
+                    "twoWay": true,
+                    "twoWayKey": "mover_profiles",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "driversLicense",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleBrand",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleModel",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleYear",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleCapacity",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleRegistration",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "small_van",
+                        "medium_truck",
+                        "large_truck"
+                    ]
+                },
+                {
+                    "key": "rating",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "totalMoves",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "yearsExperience",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "verificationStatus",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "pending_verification",
+                        "verified",
+                        "suspended",
+                        "rejected"
+                    ]
+                },
+                {
+                    "key": "isOnline",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "currentLatitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "currentLongitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "languages",
+                    "type": "text",
+                    "required": false,
+                    "array": true,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "baseRate",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "crew_members",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e1b200265b6d0281",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "moverProfileId",
+                    "onDelete": "setNull",
+                    "side": "child"
+                },
+                {
+                    "key": "moves",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "moverProfileId",
+                    "onDelete": "setNull",
+                    "side": "child"
+                },
+                {
+                    "key": "moverLocations",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991f733000aa69982ba",
+                    "relationType": "oneToMany",
+                    "twoWay": false,
+                    "twoWayKey": "69951421001339522e84",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "6991e1b200265b6d0281",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "crew_members",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "moverProfileId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991dd5b0022477fb75f",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "crew_members",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "name",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "phone",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "photo",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "role",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "driver",
+                        "helper"
+                    ]
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "6991e46d001ab2a9f7d8",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "moves",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "handle",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "clientId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991d955003932cb853b",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "moves",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "moverProfileId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991dd5b0022477fb75f",
+                    "relationType": "manyToOne",
+                    "twoWay": true,
+                    "twoWayKey": "moves",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "draft",
+                        "pending_payment",
+                        "paid",
+                        "mover_assigned",
+                        "mover_accepted",
+                        "mover_en_route",
+                        "mover_arrived",
+                        "loading",
+                        "in_transit",
+                        "arrived_destination",
+                        "unloading",
+                        "completed",
+                        "cancelled_by_client",
+                        "cancelled_by_mover",
+                        "disputed"
+                    ]
+                },
+                {
+                    "key": "moveCategory",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "instant",
+                        "scheduled"
+                    ]
+                },
+                {
+                    "key": "moveType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "light",
+                        "regular",
+                        "premium"
+                    ]
+                },
+                {
+                    "key": "systemMoveType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "light",
+                        "regular",
+                        "premium"
+                    ]
+                },
+                {
+                    "key": "moveDate",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "pickupLocation",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "pickupLatitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "pickupLongitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "pickupStreetAddress",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "pickupApartmentUnit",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "pickupFloorLevel",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "pickupElevator",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "pickupParking",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "pickupHaltverbot",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "dropoffLocation",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "dropoffLatitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "dropoffLongitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "dropoffStreetAddress",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "dropoffApartmentUnit",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "dropoffFloorLevel",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "dropoffElevator",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "dropoffParking",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "dropoffHaltverbot",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "homeType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "apartment",
+                        "house",
+                        "office",
+                        "storage"
+                    ]
+                },
+                {
+                    "key": "customItems",
+                    "type": "mediumtext",
+                    "required": false,
+                    "array": true,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "inventoryItems",
+                    "type": "longtext",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "totalItemCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "totalWeightKg",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "totalVolumeCm3",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "packingServiceLevel",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "none",
+                        "partial",
+                        "full",
+                        "unpacking"
+                    ]
+                },
+                {
+                    "key": "packingMaterials",
+                    "type": "text",
+                    "required": false,
+                    "array": true,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "packingNotes",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "arrivalWindow",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "flexibility",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "flexible_1hr",
+                        "not_flexible"
+                    ]
+                },
+                {
+                    "key": "crewSize",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vehicleType",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "additionalServices",
+                    "type": "text",
+                    "required": false,
+                    "array": true,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "storageWeeks",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": 0,
+                    "min": 0,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "coverPhotoId",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "galleryPhotoIds",
+                    "type": "text",
+                    "required": false,
+                    "array": true,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contactFullName",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contactPhone",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contactEmail",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contactNotes",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "isBusinessMove",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "companyName",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vatId",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "estimatedPrice",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "finalPrice",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "routeDistanceMeters",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "routeDurationSeconds",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "termsAccepted",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "privacyAccepted",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "paidAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "completedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "reviews",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "69920b03000c5440c29e",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69951496001281354cd2",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "moveStatusHistory",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "69920520001652c21df7",
+                    "relationType": "oneToMany",
+                    "twoWay": false,
+                    "twoWayKey": "699514ce00342141d5a8",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "6991f463002db9924945",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "move_requests",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "moveId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6991f68b0038571365e0",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "moverProfileId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991dd5b0022477fb75f",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6991f6be003575a69752",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "pending",
+                        "accepted",
+                        "declined",
+                        "expired"
+                    ]
+                },
+                {
+                    "key": "sentAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "respondedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "expiresAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "6991f733000aa69982ba",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "mover_locations",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "moverProfileId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991dd5b0022477fb75f",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "699202db00396cb244a9",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "moveId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6992032b000431a6b33e",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "latitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "longitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "heading",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "speed",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "timestamp",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "69920520001652c21df7",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "move_status_history",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "fromStatus",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "toStatus",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "changedBy",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "changedAt",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "default": null,
+                    "format": ""
+                },
+                {
+                    "key": "note",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "moveId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6992060a003ac6f3c2dd",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "699206ff000605789649",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "payments",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "moveId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69920a290039b5aa3b6d",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "users",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991d955003932cb853b",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69920a54001a8b9d2e91",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "amount",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "currency",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "pending",
+                        "completed",
+                        "refunded",
+                        "failed"
+                    ]
+                },
+                {
+                    "key": "paymentMethod",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "transactionId",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "69920b03000c5440c29e",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "reviews",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "moveId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991e46d001ab2a9f7d8",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69920c350014a62f95bb",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "reviewerId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991d955003932cb853b",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69950b180027342d051c",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "moverProfileId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991dd5b0022477fb75f",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69950b790008b677b30c",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "rating",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "comment",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "69950bed001ecf9203b3",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "notifications",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6991d955003932cb853b",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "69950c18002954a3585b",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "type",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "move_request",
+                        "move_accepted",
+                        "mover_arrived",
+                        "move_completed",
+                        "payment",
+                        "review",
+                        "system"
+                    ]
+                },
+                {
+                    "key": "title",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "body",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "data",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "isRead",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "699511da003b87d1039d",
+            "$permissions": [],
+            "databaseId": "6990885c000627570048",
+            "name": "inventory_catalog",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "itemId",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "heightCm",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "widthCm",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "depthCm",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807
+                },
+                {
+                    "key": "weightKg",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "moveClassificationWeight",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "min": null,
+                    "max": null
+                },
+                {
+                    "key": "moveTypeMinimum",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "format": "enum",
+                    "elements": [
+                        "light",
+                        "regular",
+                        "premium"
+                    ]
+                }
+            ],
+            "indexes": []
+        }
+    ],
+    "buckets": [
+        {
+            "$id": "699519cc0003213a2bb1",
+            "$permissions": [],
+            "fileSecurity": false,
+            "name": "picklt",
+            "enabled": true,
+            "maximumFileSize": 5000000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        }
+    ],
+    "teams": [],
+    "topics": []
+}

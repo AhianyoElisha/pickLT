@@ -15,6 +15,7 @@ const MyCrewPage = () => {
   const { crewMembers, addCrewMember, removeCrewMember, updateCrewMember } = useAuth()
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [editingMember, setEditingMember] = useState<CrewMember | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const [newMember, setNewMember] = useState<{
     name: string
     phone: string
@@ -25,28 +26,72 @@ const MyCrewPage = () => {
     role: 'helper',
   })
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     if (newMember.name && newMember.phone) {
-      addCrewMember({
-        id: Date.now().toString(),
-        name: newMember.name,
-        phone: newMember.phone,
-        role: newMember.role,
-        isActive: true,
-      })
-      setNewMember({ name: '', phone: '', role: 'helper' })
-      setIsAddingMember(false)
+      setIsSaving(true)
+      try {
+        const res = await fetch('/api/crew', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMember),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          addCrewMember({
+            id: data.crewMember.$id,
+            name: data.crewMember.name,
+            phone: data.crewMember.phone,
+            role: data.crewMember.role,
+            isActive: true,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to add crew member:', err)
+      } finally {
+        setNewMember({ name: '', phone: '', role: 'helper' })
+        setIsAddingMember(false)
+        setIsSaving(false)
+      }
     }
   }
 
-  const handleUpdateMember = () => {
+  const handleUpdateMember = async () => {
     if (editingMember) {
-      updateCrewMember(editingMember.id, {
-        name: editingMember.name,
-        phone: editingMember.phone,
-        role: editingMember.role,
-      })
-      setEditingMember(null)
+      setIsSaving(true)
+      try {
+        const res = await fetch(`/api/crew/${editingMember.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editingMember.name,
+            phone: editingMember.phone,
+            role: editingMember.role,
+          }),
+        })
+        if (res.ok) {
+          updateCrewMember(editingMember.id, {
+            name: editingMember.name,
+            phone: editingMember.phone,
+            role: editingMember.role,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to update crew member:', err)
+      } finally {
+        setEditingMember(null)
+        setIsSaving(false)
+      }
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      const res = await fetch(`/api/crew/${memberId}`, { method: 'DELETE' })
+      if (res.ok) {
+        removeCrewMember(memberId)
+      }
+    } catch (err) {
+      console.error('Failed to remove crew member:', err)
     }
   }
 
@@ -138,9 +183,10 @@ const MyCrewPage = () => {
               </button>
               <button
                 onClick={handleAddMember}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-medium hover:bg-primary-700 transition-colors"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
               >
-                Add Member
+                {isSaving ? 'Adding...' : 'Add Member'}
               </button>
             </div>
           </div>
@@ -209,9 +255,10 @@ const MyCrewPage = () => {
               </button>
               <button
                 onClick={handleUpdateMember}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-medium hover:bg-primary-700 transition-colors"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-full text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
               >
-                Save Changes
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -259,7 +306,7 @@ const MyCrewPage = () => {
                     <PencilIcon className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => removeCrewMember(member.id)}
+                    onClick={() => handleRemoveMember(member.id)}
                     className="p-2 text-neutral-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                   >
                     <TrashIcon className="w-5 h-5" />

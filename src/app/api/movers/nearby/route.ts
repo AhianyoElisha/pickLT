@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/appwrite-server'
+import { APPWRITE } from '@/lib/constants'
+import { Query } from 'node-appwrite'
+import { auth } from '@clerk/nextjs/server'
+
+/**
+ * GET /api/movers/nearby
+ * Find verified, online movers near a given coordinate
+ * Query params: ?lat=52.52&lng=13.405&radiusKm=15
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const lat = parseFloat(searchParams.get('lat') || '0')
+    const lng = parseFloat(searchParams.get('lng') || '0')
+    const radiusKm = parseFloat(searchParams.get('radiusKm') || '15')
+
+    if (!lat || !lng) {
+      return NextResponse.json({ error: 'lat and lng are required' }, { status: 400 })
+    }
+
+    const { databases } = createAdminClient()
+
+    // Fetch verified & online movers
+    const movers = await databases.listDocuments(
+      APPWRITE.DATABASE_ID,
+      APPWRITE.COLLECTIONS.MOVER_PROFILES,
+      [
+        Query.equal('verificationStatus', 'verified'),
+        Query.equal('isOnline', true),
+        Query.limit(50),
+      ]
+    )
+
+    // Filter by distance (Haversine approximation)
+    const nearbyMovers = movers.documents
+      .filter((mover) => {
+        if (!mover.currentLatitude || !mover.currentLongitude) return false
+        const dist = haversineKm(lat, lng, mover.currentLatitude, mover.currentLongitude)
+        return dist <= radiusKm
+      })
+      .map((mover) => ({
+        ...mover,
+        distanceKm: haversineKm(lat, lng, mover.currentLatitude, mover.currentLongitude),
+      }))
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+
+    return NextResponse.json({
+      movers: nearbyMovers,
+      total: nearbyMovers.length,
+    })
+  } catch (err) {
+    console.error('GET /api/movers/nearby error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Haversine formula — returns distance in km
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function toRad(deg: number): number {
+  return (deg * Math.PI) / 180
+}
