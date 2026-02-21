@@ -1,15 +1,16 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useUser, useAuth as useClerkAuth } from '@clerk/nextjs'
+import { account } from '@/lib/appwrite'
+import { OAuthProvider } from 'appwrite'
 import type { UserDoc, MoverProfileDoc, CrewMemberDoc } from '@/lib/types'
 
 export type UserType = 'client' | 'mover'
 
-// The user shape consumed across the app — combines Clerk auth + Appwrite profile
+// The user shape consumed across the app — combines Appwrite auth + Appwrite profile
 export type User = {
-  // Clerk ID
-  clerkId: string
+  // Appwrite Auth user ID
+  authId: string
   // Appwrite doc ID (from users collection)
   appwriteId: string | null
   fullName: string
@@ -64,6 +65,13 @@ type AuthActions = {
   addCrewMember: (member: CrewMember) => void
   updateCrewMember: (id: string, updates: Partial<CrewMember>) => void
   removeCrewMember: (id: string) => void
+  loginWithGoogle: (redirectTo?: string) => void
+  loginWithEmail: (email: string, password: string) => Promise<void>
+  signupWithEmail: (email: string, password: string, name: string) => Promise<void>
+  // Phone verification (mandatory step after Google/Email auth)
+  setPhoneForVerification: (phone: string) => Promise<void>
+  sendPhoneVerification: () => Promise<void>
+  confirmPhoneVerification: (userId: string, secret: string) => Promise<void>
 }
 
 const defaultState: AuthState = {
@@ -83,57 +91,69 @@ const AuthContext = createContext<AuthState & AuthActions>({
   addCrewMember: () => {},
   updateCrewMember: () => {},
   removeCrewMember: () => {},
+  loginWithGoogle: () => {},
+  loginWithEmail: async () => {},
+  signupWithEmail: async () => {},
+  setPhoneForVerification: async () => {},
+  sendPhoneVerification: async () => {},
+  confirmPhoneVerification: async () => {},
 })
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { isSignedIn, user: clerkUser, isLoaded: clerkLoaded } = useUser()
-  const { signOut } = useClerkAuth()
-
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [userType, setUserType] = useState<UserType>('client')
   const [crewMembers, setCrewMembers] = useState<CrewMember[]>([])
 
-  // Sync Clerk user → Appwrite users collection on login
-  const syncUser = useCallback(async () => {
-    if (!isSignedIn || !clerkUser) {
-      setUser(null)
-      setIsLoading(false)
-      return
-    }
-
+  // Check the current Appwrite session and sync profile
+  const loadSession = useCallback(async () => {
     try {
+      const appwriteUser = await account.get()
+
+      // Initialize server-side session cookie on our domain
+      // (the Appwrite SDK session cookie lives on Appwrite's domain and
+      //  is not accessible to our Next.js API routes or middleware)
+      try {
+        await fetch('/api/auth/init-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: appwriteUser.$id }),
+        })
+      } catch {
+        console.warn('Failed to initialize server session cookie')
+      }
+
+      // Sync with our users collection via API
       const res = await fetch('/api/auth/sync-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clerkId: clerkUser.id,
-          email: clerkUser.primaryEmailAddress?.emailAddress ?? '',
-          fullName: clerkUser.fullName ?? `${clerkUser.firstName ?? ''} ${clerkUser.lastName ?? ''}`.trim(),
-          phone: clerkUser.primaryPhoneNumber?.phoneNumber ?? '',
-          profilePhoto: clerkUser.imageUrl ?? '',
-          emailVerified: clerkUser.primaryEmailAddress?.verification?.status === 'verified',
-          phoneVerified: clerkUser.primaryPhoneNumber?.verification?.status === 'verified',
+          authId: appwriteUser.$id,
+          email: appwriteUser.email || '',
+          fullName: appwriteUser.name || '',
+          phone: appwriteUser.phone || '',
+          emailVerified: appwriteUser.emailVerification ?? false,
+          phoneVerified: appwriteUser.phoneVerification ?? false,
         }),
       })
 
       if (!res.ok) throw new Error('Failed to sync user')
 
       const data = await res.json()
-      const appwriteUser: UserDoc = data.user
+      const userDoc: UserDoc = data.user
       const moverProfile: MoverProfileDoc | null = data.moverProfile ?? null
       const crewData: CrewMemberDoc[] = data.crewMembers ?? []
 
       const mappedUser: User = {
-        clerkId: clerkUser.id,
-        appwriteId: appwriteUser.$id,
-        fullName: appwriteUser.fullName,
-        email: appwriteUser.email,
-        phone: appwriteUser.phone ?? '',
-        profilePhoto: appwriteUser.profilePhoto ?? clerkUser.imageUrl,
-        userType: (appwriteUser.userType as UserType) ?? 'client',
-        emailVerified: appwriteUser.emailVerified ?? false,
-        phoneVerified: appwriteUser.phoneVerified ?? false,
+        authId: appwriteUser.$id,
+        appwriteId: userDoc.$id,
+        fullName: userDoc.fullName,
+        email: userDoc.email,
+        phone: userDoc.phone ?? '',
+        profilePhoto: userDoc.profilePhoto ?? undefined,
+        userType: (userDoc.userType as UserType) ?? 'client',
+        emailVerified: userDoc.emailVerified ?? false,
+        phoneVerified: userDoc.phoneVerified ?? false,
         ...(moverProfile && {
           moverDetails: {
             profileId: moverProfile.$id,
@@ -171,34 +191,84 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }))
         )
       }
-    } catch (err) {
-      console.error('Failed to sync user with Appwrite:', err)
-      // Still set a basic user from Clerk data so the app doesn't break
-      setUser({
-        clerkId: clerkUser.id,
-        appwriteId: null,
-        fullName: clerkUser.fullName ?? '',
-        email: clerkUser.primaryEmailAddress?.emailAddress ?? '',
-        phone: clerkUser.primaryPhoneNumber?.phoneNumber ?? '',
-        profilePhoto: clerkUser.imageUrl,
-        userType: 'client',
-        emailVerified: clerkUser.primaryEmailAddress?.verification?.status === 'verified',
-        phoneVerified: clerkUser.primaryPhoneNumber?.verification?.status === 'verified',
-      })
+    } catch {
+      // No active session or sync failed
+      setUser(null)
     } finally {
       setIsLoading(false)
     }
-  }, [isSignedIn, clerkUser])
+  }, [])
 
-  // Run sync when Clerk auth state changes
+  // Load session on mount
   useEffect(() => {
-    if (clerkLoaded) {
-      syncUser()
+    loadSession()
+  }, [loadSession])
+
+  // ─── Auth Methods ─────────────────────────────────────
+
+  const loginWithGoogle = (redirectTo?: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const successUrl = redirectTo ? `${origin}${redirectTo}` : `${origin}/`
+    const failureUrl = `${origin}/login`
+    account.createOAuth2Session(OAuthProvider.Google, successUrl, failureUrl)
+  }
+
+  const loginWithEmail = async (email: string, password: string) => {
+    await account.createEmailPasswordSession(email, password)
+    await loadSession()
+  }
+
+  const signupWithEmail = async (email: string, password: string, name: string) => {
+    await account.create('unique()', email, password, name)
+    await account.createEmailPasswordSession(email, password)
+    await loadSession()
+  }
+
+  /**
+   * Step 1: Set phone on the Appwrite auth account via admin API
+   * (needed because account.updatePhone requires password, which Google OAuth users don't have)
+   */
+  const setPhoneForVerification = async (phone: string) => {
+    const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`
+    const res = await fetch('/api/auth/set-phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: formattedPhone }),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Failed to set phone number')
     }
-  }, [clerkLoaded, isSignedIn, syncUser])
+  }
+
+  /**
+   * Step 2: Trigger SMS OTP to the phone number that was set in step 1.
+   * Uses Appwrite's built-in phone verification which sends via the configured Twilio provider.
+   */
+  const sendPhoneVerification = async () => {
+    await account.createPhoneVerification()
+  }
+
+  /**
+   * Step 3: Confirm the OTP code the user received.
+   */
+  const confirmPhoneVerification = async (userId: string, secret: string) => {
+    await account.updatePhoneVerification(userId, secret)
+    await loadSession() // reload to pick up phoneVerified = true
+  }
 
   const logout = async () => {
-    await signOut()
+    try {
+      await account.deleteSession('current')
+    } catch {
+      // Session may already be expired
+    }
+    // Clear our server-side session cookie
+    try {
+      await fetch('/api/auth/clear-session', { method: 'POST' })
+    } catch {
+      // Best-effort
+    }
     setUser(null)
     setUserType('client')
     setCrewMembers([])
@@ -209,7 +279,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const refreshProfile = async () => {
-    await syncUser()
+    await loadSession()
   }
 
   const addCrewMember = (member: CrewMember) => {
@@ -239,6 +309,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         addCrewMember,
         updateCrewMember,
         removeCrewMember,
+        loginWithGoogle,
+        loginWithEmail,
+        signupWithEmail,
+        setPhoneForVerification,
+        sendPhoneVerification,
+        confirmPhoneVerification,
       }}
     >
       {children}

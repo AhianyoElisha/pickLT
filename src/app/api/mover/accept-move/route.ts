@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { getSessionUserId } from '@/lib/auth-session'
 import { createAdminClient } from '@/lib/appwrite-server'
 import { APPWRITE } from '@/lib/constants'
 import { Query } from 'node-appwrite'
@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 // POST /api/mover/accept-move — Accept a move request
 export async function POST(request: NextRequest) {
   try {
-    const { userId: clerkId } = await auth()
-    if (!clerkId) {
+    const userId = await getSessionUserId()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -21,21 +21,11 @@ export async function POST(request: NextRequest) {
 
     const { databases } = createAdminClient()
 
-    // Verify the mover owns this request
-    const allUsers = await databases.listDocuments(
-      APPWRITE.DATABASE_ID,
-      APPWRITE.COLLECTIONS.USERS,
-      [Query.limit(100)]
-    )
-    const userDoc = allUsers.documents.find((u) => u.email?.includes(clerkId) || u.$id === clerkId)
-    if (!userDoc) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
+    // Get mover profile for this user
     const profiles = await databases.listDocuments(
       APPWRITE.DATABASE_ID,
       APPWRITE.COLLECTIONS.MOVER_PROFILES,
-      [Query.equal('userId', [userDoc.$id])]
+      [Query.equal('userId', [userId])]
     )
     const moverProfile = profiles.documents[0]
     if (!moverProfile) {

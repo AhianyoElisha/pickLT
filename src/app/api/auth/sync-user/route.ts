@@ -6,8 +6,8 @@ import { Query } from 'node-appwrite'
 /**
  * POST /api/auth/sync-user
  *
- * Syncs a Clerk-authenticated user to the Appwrite users collection.
- * - If user exists (by clerkId stored as $id) → update
+ * Syncs an Appwrite-authenticated user to the Appwrite users collection.
+ * - If user exists (by authId stored as $id) → update
  * - If user doesn't exist → create
  * - Also returns mover_profiles + crew_members if user is a mover
  */
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      clerkId,
+      authId,
       email,
       fullName,
       phone,
@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
       phoneVerified,
     } = body
 
-    if (!clerkId || !email) {
-      return NextResponse.json({ error: 'Missing clerkId or email' }, { status: 400 })
+    if (!authId) {
+      return NextResponse.json({ error: 'Missing authId' }, { status: 400 })
     }
 
     const { databases } = createAdminClient()
@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
     let userDoc: any
     let isNew = false
 
-    // Try to find existing user by clerkId (stored as document $id)
+    // Try to find existing user by authId (stored as document $id)
     try {
       userDoc = await databases.getDocument(
         APPWRITE.DATABASE_ID,
         APPWRITE.COLLECTIONS.USERS,
-        clerkId
+        authId
       )
     } catch {
       // Document not found — create new
@@ -47,15 +47,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (isNew || !userDoc) {
-      // Create new user document with clerkId as $id
+      // Create new user document with authId as $id
       isNew = true
       userDoc = await databases.createDocument(
         APPWRITE.DATABASE_ID,
         APPWRITE.COLLECTIONS.USERS,
-        clerkId,
+        authId,
         {
-          email,
-          fullName: fullName || email.split('@')[0],
+          email: email || '',
+          fullName: fullName || (email ? email.split('@')[0] : 'User'),
           phone: phone || null,
           profilePhoto: profilePhoto || null,
           userType: 'client',
@@ -64,11 +64,11 @@ export async function POST(req: NextRequest) {
         }
       )
     } else {
-      // Update existing user with latest Clerk data
+      // Update existing user with latest auth data
       userDoc = await databases.updateDocument(
         APPWRITE.DATABASE_ID,
         APPWRITE.COLLECTIONS.USERS,
-        clerkId,
+        authId,
         {
           email,
           fullName: fullName || userDoc.fullName,
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         const profiles = await databases.listDocuments(
           APPWRITE.DATABASE_ID,
           APPWRITE.COLLECTIONS.MOVER_PROFILES,
-          [Query.equal('userId', clerkId)]
+          [Query.equal('userId', authId)]
         )
         if (profiles.documents.length > 0) {
           moverProfile = profiles.documents[0]

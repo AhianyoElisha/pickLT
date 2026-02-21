@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { getSessionUserId } from '@/lib/auth-session'
 import { createAdminClient } from '@/lib/appwrite-server'
 import { APPWRITE } from '@/lib/constants'
 import { Query } from 'node-appwrite'
@@ -7,41 +7,18 @@ import { NextResponse } from 'next/server'
 // GET /api/mover/available-moves — Get move requests for the authenticated mover
 export async function GET() {
   try {
-    const { userId: clerkId } = await auth()
-    if (!clerkId) {
+    const userId = await getSessionUserId()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { databases } = createAdminClient()
 
-    // Find the user by clerkId
-    const users = await databases.listDocuments(
-      APPWRITE.DATABASE_ID,
-      APPWRITE.COLLECTIONS.USERS,
-      [Query.equal('email', [clerkId])]
-    )
-
-    // Try matching by email from user doc
-    let userDoc = users.documents[0]
-    if (!userDoc) {
-      // Search differently - find by iterating (clerkId stored as part of doc)
-      const allUsers = await databases.listDocuments(
-        APPWRITE.DATABASE_ID,
-        APPWRITE.COLLECTIONS.USERS,
-        [Query.limit(100)]
-      )
-      userDoc = allUsers.documents.find((u) => u.email?.includes(clerkId) || u.$id === clerkId) as typeof userDoc
-    }
-
-    if (!userDoc) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Get the mover profile
+    // Get the mover profile for this user
     const profiles = await databases.listDocuments(
       APPWRITE.DATABASE_ID,
       APPWRITE.COLLECTIONS.MOVER_PROFILES,
-      [Query.equal('userId', [userDoc.$id])]
+      [Query.equal('userId', [userId])]
     )
 
     const moverProfile = profiles.documents[0]

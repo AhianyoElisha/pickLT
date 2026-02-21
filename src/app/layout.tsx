@@ -6,7 +6,6 @@ import CustomizeControl from './customize-control'
 import ThemeProvider from './theme-provider'
 import MoveSearchProvider from '@/context/moveSearch'
 import { AuthProvider } from '@/context/auth'
-import { ClerkProvider } from '@clerk/nextjs'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -25,19 +24,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
-      <html lang="en" className={poppins.className}>
-        <body className="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
-          <ThemeProvider>
-            <div>
-              <AuthProvider>
-                <MoveSearchProvider>{children}</MoveSearchProvider>
-              </AuthProvider>
-              <CustomizeControl />
-            </div>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className={poppins.className}>
+      <body className="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
+        <ThemeProvider>
+          <div>
+            <AuthProvider>
+              <MoveSearchProvider>{children}</MoveSearchProvider>
+            </AuthProvider>
+            <CustomizeControl />
+          </div>
+        </ThemeProvider>
+      </body>
+    </html>
   )
 }
