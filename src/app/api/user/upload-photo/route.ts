@@ -4,12 +4,14 @@ import { APPWRITE, APPWRITE_ENDPOINT } from '@/lib/constants'
 import { getSessionUserId } from '@/lib/auth-session'
 import { ID } from 'node-appwrite'
 import { InputFile } from 'node-appwrite/file'
+import sharp from 'sharp'
 
 /**
  * POST /api/user/upload-photo
  * 
  * Uploads a profile photo to Appwrite Storage and updates the user's profile.
  * Accepts multipart/form-data with a "file" field.
+ * Images are compressed server-side (max 1920px, JPEG 80% quality) to save storage.
  * Returns the public URL of the uploaded file.
  */
 export async function POST(req: NextRequest) {
@@ -31,23 +33,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File must be an image' }, { status: 400 })
     }
 
-    // Max 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be under 5MB' }, { status: 400 })
+    // Max 10MB raw (will be compressed)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File size must be under 10MB' }, { status: 400 })
     }
 
     const { storage, databases } = createAdminClient()
 
-    // Convert File to buffer for node-appwrite
+    // ── Compress image server-side ───────────────────────────
     const arrayBuffer = await file.arrayBuffer()
-    const uint8 = new Uint8Array(arrayBuffer)
+    let compressed: Buffer
+
+    try {
+      compressed = await sharp(Buffer.from(arrayBuffer))
+        .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toBuffer()
+    } catch {
+      // If sharp fails (e.g. unsupported format), fall back to original
+      compressed = Buffer.from(arrayBuffer)
+    }
+
+    const uint8 = new Uint8Array(compressed)
+    const fileName = file.name.replace(/\.[^.]+$/, '.jpg')
 
     // Upload to Appwrite Storage
     const fileId = ID.unique()
     await storage.createFile(
       APPWRITE.BUCKETS.PROFILE_PHOTOS,
       fileId,
-      InputFile.fromBuffer(uint8, file.name)
+      InputFile.fromBuffer(uint8, fileName)
     )
 
     // Build the public preview URL
