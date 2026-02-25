@@ -61,6 +61,7 @@ export default function CompleteProfilePage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const licensePhotoRef = useRef<HTMLInputElement>(null)
+  const selfiePhotoRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -69,6 +70,8 @@ export default function CompleteProfilePage() {
     driversLicense: '',
     driversLicensePhoto: null as File | null,
     driversLicensePhotoPreview: '',
+    selfiePhoto: null as File | null,
+    selfiePhotoPreview: '',
     socialSecurityNumber: '',
     taxNumber: '',
     primaryCity: '',
@@ -95,7 +98,13 @@ export default function CompleteProfilePage() {
       case 'personal':
         return form.fullName.trim() && form.phone.trim() && form.driversLicense.trim()
       case 'verification':
-        return form.primaryCity.trim() && form.primaryCountry.trim()
+        return (
+          form.primaryCity.trim() &&
+          form.primaryCountry.trim() &&
+          form.socialSecurityNumber.trim() &&
+          form.taxNumber.trim() &&
+          form.selfiePhoto !== null
+        )
       case 'vehicle':
         return (
           form.vehicleBrand.trim() &&
@@ -144,6 +153,23 @@ export default function CompleteProfilePage() {
         }
       }
 
+      // Upload selfie photo (required)
+      let selfiePhotoUrl = ''
+      if (form.selfiePhoto) {
+        const compressed = await compressImage(form.selfiePhoto)
+        const selfieFormData = new FormData()
+        selfieFormData.append('file', compressed)
+        selfieFormData.append('bucket', 'PROFILE_PHOTOS')
+        const selfieRes = await fetch('/api/user/upload-photo', {
+          method: 'POST',
+          body: selfieFormData,
+        })
+        if (selfieRes.ok) {
+          const selfieData = await selfieRes.json()
+          selfiePhotoUrl = selfieData.photoUrl
+        }
+      }
+
       // Submit mover profile (includes personal info)
       const res = await fetch('/api/mover/submit-profile', {
         method: 'POST',
@@ -153,8 +179,9 @@ export default function CompleteProfilePage() {
           phone: form.phone,
           driversLicense: form.driversLicense,
           driversLicensePhoto: driversLicensePhotoUrl || undefined,
-          socialSecurityNumber: form.socialSecurityNumber || undefined,
-          taxNumber: form.taxNumber || undefined,
+          selfiePhoto: selfiePhotoUrl || undefined,
+          socialSecurityNumber: form.socialSecurityNumber,
+          taxNumber: form.taxNumber,
           primaryCity: form.primaryCity,
           primaryCountry: form.primaryCountry,
           vehicleBrand: form.vehicleBrand,
@@ -378,7 +405,7 @@ export default function CompleteProfilePage() {
             {/* SSN */}
             <div>
               <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Social Security Number
+                Social Security Number *
               </label>
               <input
                 type="password"
@@ -389,14 +416,14 @@ export default function CompleteProfilePage() {
                 className="w-full rounded-xl border border-neutral-200 bg-transparent px-4 py-2.5 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-neutral-700"
               />
               <p className="mt-1 text-xs text-neutral-400">
-                Optional — encrypted and only used for tax verification
+                Encrypted and only used for tax verification
               </p>
             </div>
 
             {/* Tax Number */}
             <div>
               <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Tax Identification Number
+                Tax Identification Number *
               </label>
               <input
                 type="text"
@@ -406,7 +433,58 @@ export default function CompleteProfilePage() {
                 className="w-full rounded-xl border border-neutral-200 bg-transparent px-4 py-2.5 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-neutral-700"
               />
               <p className="mt-1 text-xs text-neutral-400">
-                Optional — for invoice generation and tax reporting
+                Required for invoice generation and tax reporting
+              </p>
+            </div>
+
+            {/* Selfie Upload */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Selfie Photo *
+              </label>
+              <input
+                ref={selfiePhotoRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    updateForm({
+                      selfiePhoto: file,
+                      selfiePhotoPreview: URL.createObjectURL(file),
+                    })
+                  }
+                }}
+              />
+              {form.selfiePhotoPreview ? (
+                <div className="relative">
+                  <img
+                    src={form.selfiePhotoPreview}
+                    alt="Selfie preview"
+                    className="h-48 w-48 rounded-full object-cover border-4 border-primary-500 mx-auto"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => selfiePhotoRef.current?.click()}
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full bg-white/90 dark:bg-neutral-800/90 px-3 py-1.5 text-xs font-medium shadow transition hover:bg-white"
+                  >
+                    Retake selfie
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => selfiePhotoRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 py-8 text-sm text-neutral-500 transition hover:border-primary-400 hover:text-primary-600 dark:border-neutral-600 dark:hover:border-primary-500"
+                >
+                  <CameraIcon className="h-5 w-5" />
+                  Take or upload a clear selfie
+                </button>
+              )}
+              <p className="mt-1 text-xs text-neutral-400">
+                A clear selfie is required for identity verification
               </p>
             </div>
 
@@ -649,11 +727,10 @@ export default function CompleteProfilePage() {
                 {form.driversLicensePhotoPreview && (
                   <p className="text-sm text-green-600 dark:text-green-400">✓ License photo uploaded</p>
                 )}
-                {form.socialSecurityNumber && (
-                  <p className="text-sm text-neutral-500">SSN: ••••{form.socialSecurityNumber.slice(-4)}</p>
-                )}
-                {form.taxNumber && (
-                  <p className="text-sm text-neutral-500">Tax ID: {form.taxNumber}</p>
+                <p className="text-sm text-neutral-500">SSN: ••••{form.socialSecurityNumber.slice(-4)}</p>
+                <p className="text-sm text-neutral-500">Tax ID: {form.taxNumber}</p>
+                {form.selfiePhotoPreview && (
+                  <p className="text-sm text-green-600 dark:text-green-400">✓ Selfie uploaded</p>
                 )}
               </div>
               <hr className="border-neutral-200 dark:border-neutral-600" />

@@ -2,82 +2,192 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { client } from '@/lib/appwrite'
+import { client, databases } from '@/lib/appwrite'
+import { Query } from 'appwrite'
 import type { RealtimeResponseEvent, Models } from 'appwrite'
+import Image from 'next/image'
 import {
   MapPinIcon,
   ClockIcon,
   TruckIcon,
   XMarkIcon,
   CheckIcon,
+  CubeIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 
 const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || ''
 const MOVE_REQUESTS_COLLECTION = process.env.NEXT_PUBLIC_COLLECTION_MOVE_REQUESTS || ''
+const MOVES_COLLECTION = process.env.NEXT_PUBLIC_COLLECTION_MOVES || ''
+const BUCKET_MOVE_PHOTOS = process.env.NEXT_PUBLIC_BUCKET_MOVE_PHOTOS || ''
+const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || ''
+const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || ''
+
+interface MoveDetails {
+  $id: string
+  handle: string | null
+  status: string
+  moveType: string | null
+  moveCategory: string | null
+  moveDate: string | null
+  pickupLocation: string | null
+  pickupStreetAddress: string | null
+  dropoffLocation: string | null
+  dropoffStreetAddress: string | null
+  totalItemCount: number | null
+  totalWeightKg: number | null
+  estimatedPrice: number | null
+  crewSize: string | null
+  vehicleType: string | null
+  coverPhotoId: string | null
+  galleryPhotoIds: string[]
+  routeDistanceMeters: number | null
+  routeDurationSeconds: number | null
+  homeType: string | null
+  contactFullName: string | null
+  packingServiceLevel: string | null
+  additionalServices: string[]
+}
 
 interface IncomingRequest {
   requestId: string
   moveId: string
-  pickupLocation?: string
-  dropoffLocation?: string
-  moveType?: string
-  estimatedPrice?: number
-  itemCount?: number
   expiresAt?: string
+  move: MoveDetails | null
 }
 
 interface MoveRequestPopupProps {
-  /** The logged-in mover's profile ID (from Appwrite) */
   moverProfileId: string | null
 }
 
-// ─── Alert sound generator ──────────────────────────────────
-// Creates a looping alert sound using the Web Audio API
-function createAlertSound(): { play: () => void; stop: () => void } {
+// ─── Helper functions ───────────────────────────────────
+const formatLabel = (value: string | null | undefined): string => {
+  if (!value) return 'Not specified'
+  return value
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-GB', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+const formatDistance = (meters: number | null): string => {
+  if (!meters) return ''
+  if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`
+  return `${Math.round(meters)} m`
+}
+
+const formatDuration = (seconds: number | null): string => {
+  if (!seconds) return ''
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.ceil((seconds % 3600) / 60)
+  if (hours > 0) return `${hours}h ${minutes}min`
+  return `${minutes} min`
+}
+
+const getPhotoUrl = (fileId: string): string => {
+  if (!fileId || !APPWRITE_ENDPOINT || !PROJECT_ID || !BUCKET_MOVE_PHOTOS) return ''
+  return `${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_MOVE_PHOTOS}/files/${fileId}/view?project=${PROJECT_ID}`
+}
+
+// ─── Alarming sound generator ───────────────────────────
+// Creates a loud, urgent, repeating alarm that demands attention.
+// Uses multiple oscillators for a siren-like effect.
+function createAlarmSound(): { play: () => void; stop: () => void } {
   let ctx: AudioContext | null = null
-  let oscillator: OscillatorNode | null = null
-  let gainNode: GainNode | null = null
   let intervalId: NodeJS.Timeout | null = null
+  let isPlaying = false
 
   const play = () => {
+    if (isPlaying) return
+    isPlaying = true
+
     try {
       ctx = new AudioContext()
-      gainNode = ctx.createGain()
-      gainNode.connect(ctx.destination)
-      gainNode.gain.value = 0
 
-      // Play a repeating two-tone beep pattern
-      let isPlaying = true
-      const beep = (freq: number, duration: number) => {
-        if (!ctx || !gainNode || !isPlaying) return
-        const osc = ctx.createOscillator()
-        osc.type = 'sine'
-        osc.frequency.value = freq
-        osc.connect(gainNode)
-        gainNode.gain.setValueAtTime(0.5, ctx.currentTime)
-        osc.start()
+      const playUrgentPattern = () => {
+        if (!ctx || !isPlaying) return
+
+        const gainNode = ctx.createGain()
+        gainNode.connect(ctx.destination)
+
+        // Siren sweep: ascending then descending
+        const siren = ctx.createOscillator()
+        siren.type = 'sawtooth'
+        siren.connect(gainNode)
+
+        const now = ctx.currentTime
+        // Ascending sweep
+        siren.frequency.setValueAtTime(600, now)
+        siren.frequency.linearRampToValueAtTime(1200, now + 0.3)
+        // Descending sweep
+        siren.frequency.linearRampToValueAtTime(600, now + 0.6)
+
+        // Volume envelope with urgency
+        gainNode.gain.setValueAtTime(0, now)
+        gainNode.gain.linearRampToValueAtTime(0.6, now + 0.05)
+        gainNode.gain.setValueAtTime(0.6, now + 0.55)
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.65)
+
+        siren.start(now)
+        siren.stop(now + 0.7)
+
+        // Second beep — higher pitch staccato
         setTimeout(() => {
-          gainNode?.gain.setValueAtTime(0, ctx!.currentTime)
-          osc.stop()
-          osc.disconnect()
-        }, duration)
+          if (!ctx || !isPlaying) return
+          const beepGain = ctx.createGain()
+          beepGain.connect(ctx.destination)
+          const beep = ctx.createOscillator()
+          beep.type = 'square'
+          beep.frequency.value = 1400
+          beep.connect(beepGain)
+
+          const t = ctx.currentTime
+          beepGain.gain.setValueAtTime(0.4, t)
+          beep.start(t)
+          beep.stop(t + 0.15)
+
+          setTimeout(() => {
+            if (!ctx || !isPlaying) return
+            const beepGain2 = ctx.createGain()
+            beepGain2.connect(ctx.destination)
+            const beep2 = ctx.createOscillator()
+            beep2.type = 'square'
+            beep2.frequency.value = 1400
+            beep2.connect(beepGain2)
+
+            const t2 = ctx!.currentTime
+            beepGain2.gain.setValueAtTime(0.4, t2)
+            beep2.start(t2)
+            beep2.stop(t2 + 0.15)
+          }, 200)
+        }, 750)
       }
 
-      // Two-tone alert: high-low pattern every 1.5 seconds
-      const playPattern = () => {
-        beep(880, 200)
-        setTimeout(() => beep(660, 200), 250)
-        setTimeout(() => beep(880, 200), 500)
-      }
-
-      playPattern()
-      intervalId = setInterval(playPattern, 1500)
+      // Play immediately then loop
+      playUrgentPattern()
+      intervalId = setInterval(playUrgentPattern, 1800)
     } catch {
       // Web Audio API not available
     }
   }
 
   const stop = () => {
+    isPlaying = false
     if (intervalId) {
       clearInterval(intervalId)
       intervalId = null
@@ -97,13 +207,13 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
   const [isAccepting, setIsAccepting] = useState(false)
   const [isDeclining, setIsDeclining] = useState(false)
   const [countdown, setCountdown] = useState<number>(60)
+  const [imageIndex, setImageIndex] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const alertRef = useRef<{ play: () => void; stop: () => void } | null>(null)
 
-  // Countdown timer + alert sound
+  // Countdown timer + alarm sound
   useEffect(() => {
     if (!incoming) {
-      // Stop sound when there's no incoming request
       alertRef.current?.stop()
       return
     }
@@ -118,14 +228,13 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
       setCountdown(60)
     }
 
-    // Start alert sound
-    alertRef.current = createAlertSound()
+    // Start alarm sound
+    alertRef.current = createAlarmSound()
     alertRef.current.play()
 
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          // Auto-dismiss on timeout
           alertRef.current?.stop()
           setIncoming(null)
           return 0
@@ -140,15 +249,62 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
     }
   }, [incoming])
 
+  // Fetch full move details when we get a move request
+  const fetchMoveDetails = useCallback(async (moveId: string): Promise<MoveDetails | null> => {
+    if (!DATABASE_ID || !MOVES_COLLECTION) return null
+    try {
+      const doc = await databases.getDocument(DATABASE_ID, MOVES_COLLECTION, moveId)
+      return doc as unknown as MoveDetails
+    } catch (err) {
+      console.warn('[MoveRequestPopup] Failed to fetch move details:', err)
+      return null
+    }
+  }, [])
+
   // Subscribe to realtime move_requests
   useEffect(() => {
     if (!moverProfileId || !DATABASE_ID || !MOVE_REQUESTS_COLLECTION) return
+
+    // Also check for any existing pending requests on mount
+    const checkExisting = async () => {
+      try {
+        const res = await databases.listDocuments(
+          DATABASE_ID,
+          MOVE_REQUESTS_COLLECTION,
+          [
+            Query.equal('moverProfileId', moverProfileId),
+            Query.equal('status', 'pending'),
+            Query.orderDesc('$createdAt'),
+            Query.limit(1),
+          ]
+        )
+        if (res.total > 0) {
+          const doc = res.documents[0] as Models.Document & Record<string, unknown>
+          // Check if not expired
+          const expiresAt = doc.expiresAt as string | undefined
+          if (expiresAt && new Date(expiresAt).getTime() > Date.now()) {
+            const moveId = typeof doc.moveId === 'string' ? doc.moveId : (doc.moveId as Record<string, string>)?.$id || ''
+            const move = await fetchMoveDetails(moveId)
+            setIncoming({
+              requestId: doc.$id,
+              moveId,
+              expiresAt,
+              move,
+            })
+          }
+        }
+      } catch (err) {
+        console.warn('[MoveRequestPopup] Failed to check existing requests:', err)
+      }
+    }
+
+    checkExisting()
 
     const channel = `databases.${DATABASE_ID}.collections.${MOVE_REQUESTS_COLLECTION}.documents`
 
     const unsubscribe = client.subscribe<Models.Document>(
       channel,
-      (response: RealtimeResponseEvent<Models.Document>) => {
+      async (response: RealtimeResponseEvent<Models.Document>) => {
         const events = response.events || []
         const isCreate = events.some((e) => e.includes('.create'))
         if (!isCreate) return
@@ -156,28 +312,25 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
         const doc = response.payload as Models.Document & Record<string, unknown>
         if (!doc) return
 
-        // Only show requests targeted at this mover
         if (doc.moverProfileId !== moverProfileId) return
         if (doc.status !== 'pending') return
 
-        // Build the incoming request
-        const request: IncomingRequest = {
-          requestId: doc.$id,
-          moveId: typeof doc.moveId === 'string' ? doc.moveId : (doc.moveId as Record<string, string>)?.$id || '',
-          pickupLocation: doc.pickupLocation as string | undefined,
-          dropoffLocation: doc.dropoffLocation as string | undefined,
-          moveType: doc.moveType as string | undefined,
-          estimatedPrice: doc.estimatedPrice as number | undefined,
-          itemCount: doc.totalItemCount as number | undefined,
-          expiresAt: doc.expiresAt as string | undefined,
-        }
+        const moveId = typeof doc.moveId === 'string' ? doc.moveId : (doc.moveId as Record<string, string>)?.$id || ''
 
-        setIncoming(request)
+        // Fetch the full move details
+        const move = await fetchMoveDetails(moveId)
+
+        setIncoming({
+          requestId: doc.$id,
+          moveId,
+          expiresAt: doc.expiresAt as string | undefined,
+          move,
+        })
       }
     )
 
     return () => unsubscribe()
-  }, [moverProfileId])
+  }, [moverProfileId, fetchMoveDetails])
 
   const handleAccept = useCallback(async () => {
     if (!incoming) return
@@ -194,7 +347,6 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
       })
       if (res.ok) {
         setIncoming(null)
-        // Redirect to active-move tracking page
         router.push('/active-move')
       } else {
         const errData = await res.json().catch(() => ({}))
@@ -212,7 +364,6 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
     try {
       setIsDeclining(true)
       alertRef.current?.stop()
-      // Call decline API so the server can update the record
       await fetch('/api/mover/decline-move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -226,116 +377,226 @@ export default function MoveRequestPopup({ moverProfileId }: MoveRequestPopupPro
 
   if (!incoming) return null
 
+  const move = incoming.move
+
+  // Build gallery images from the move
+  const galleryImages: string[] = []
+  if (move?.coverPhotoId) galleryImages.push(getPhotoUrl(move.coverPhotoId))
+  if (move?.galleryPhotoIds) {
+    move.galleryPhotoIds.forEach((id) => {
+      const url = getPhotoUrl(id)
+      if (url) galleryImages.push(url)
+    })
+  }
+
+  const pickupDisplay = move?.pickupStreetAddress || move?.pickupLocation?.split(',')[0] || 'Pickup location'
+  const dropoffDisplay = move?.dropoffStreetAddress || move?.dropoffLocation?.split(',')[0] || 'Drop-off location'
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-white dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-        {/* Header with countdown */}
-        <div className="relative bg-gradient-to-br from-primary-500 to-primary-600 p-6 text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <TruckIcon className="w-6 h-6" />
-              <span className="font-semibold text-lg">New Move Request!</span>
-            </div>
-            <button
-              onClick={handleDecline}
-              className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+      {/* Pulsing border effect for urgency */}
+      <div className="w-full max-w-md animate-in zoom-in-95 duration-300">
+        <div className="bg-white dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-2xl ring-2 ring-red-500/50 animate-pulse-ring">
 
-          {/* Countdown */}
-          <div className="flex items-center gap-2">
-            <ClockIcon className="w-4 h-4 opacity-80" />
-            <span className="text-sm opacity-90">
-              Expires in <span className="font-bold">{countdown}s</span>
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3 h-1 bg-white/30 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-white rounded-full transition-all duration-1000 ease-linear"
-              style={{ width: `${(countdown / 60) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Move Details */}
-        <div className="p-5 space-y-4">
-          {/* Route */}
-          <div className="space-y-2">
-            <div className="flex items-start gap-3">
-              <div className="mt-1 w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
-              <div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Pickup</p>
-                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                  {incoming.pickupLocation?.split(',')[0] || 'Pickup location'}
-                </p>
+          {/* Header with countdown — red gradient for urgency */}
+          <div className="relative bg-gradient-to-br from-red-500 via-red-600 to-orange-500 p-5 text-white">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center animate-bounce">
+                  <TruckIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="font-bold text-lg block leading-tight">New Move Request!</span>
+                  <span className="text-xs opacity-80">{move?.moveCategory === 'instant' ? 'Instant' : 'Scheduled'} · {formatLabel(move?.moveType)}</span>
+                </div>
               </div>
+              <button
+                onClick={handleDecline}
+                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
             </div>
-            <div className="ml-1 w-px h-3 bg-neutral-300 dark:bg-neutral-600" />
-            <div className="flex items-start gap-3">
-              <div className="mt-1 w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-              <div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Drop-off</p>
-                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                  {incoming.dropoffLocation?.split(',')[0] || 'Drop-off location'}
-                </p>
+
+            {/* Countdown */}
+            <div className="flex items-center gap-2 mt-3">
+              <ClockIcon className="w-4 h-4 opacity-80" />
+              <span className="text-sm opacity-90">
+                Respond within <span className="font-bold text-lg">{countdown}s</span>
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mt-2 h-1.5 bg-white/30 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full transition-all duration-1000 ease-linear"
+                style={{ width: `${(countdown / 60) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Gallery / Cover Photo — like MoveCard */}
+          {galleryImages.length > 0 && (
+            <div className="relative">
+              <div className="aspect-w-16 aspect-h-9 bg-neutral-100 dark:bg-neutral-900 overflow-hidden">
+                <Image
+                  src={galleryImages[imageIndex] || galleryImages[0]}
+                  alt="Move items"
+                  fill
+                  className="object-cover"
+                  onError={() => setImageIndex(0)}
+                />
               </div>
-            </div>
-          </div>
-
-          {/* Info chips */}
-          <div className="flex flex-wrap gap-2">
-            {incoming.moveType && (
-              <span className="text-xs px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full font-medium">
-                {incoming.moveType} Move
-              </span>
-            )}
-            {incoming.itemCount && incoming.itemCount > 0 && (
-              <span className="text-xs px-2.5 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full">
-                {incoming.itemCount} items
-              </span>
-            )}
-          </div>
-
-          {/* Price */}
-          {incoming.estimatedPrice && incoming.estimatedPrice > 0 && (
-            <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl">
-              <span className="text-sm text-neutral-600 dark:text-neutral-300">Estimated earnings</span>
-              <span className="text-xl font-bold text-neutral-900 dark:text-white">
-                €{incoming.estimatedPrice}
-              </span>
+              {galleryImages.length > 1 && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {galleryImages.slice(0, 5).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setImageIndex(i)}
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        i === imageIndex ? 'bg-white' : 'bg-white/50'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+              {/* Photo count badge */}
+              <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
+                {galleryImages.length} photo{galleryImages.length !== 1 ? 's' : ''}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Action Buttons */}
-        <div className="px-5 pb-5 flex gap-3">
-          <button
-            onClick={handleDecline}
-            disabled={isDeclining}
-            className="flex-1 py-3 px-4 rounded-xl border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 font-medium text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
-          >
-            Decline
-          </button>
-          <button
-            onClick={handleAccept}
-            disabled={isAccepting}
-            className="flex-[2] py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isAccepting ? (
-              'Accepting...'
-            ) : (
-              <>
-                <CheckIcon className="w-5 h-5" />
-                Accept Move
-              </>
+          {/* Move Details — styled like MoveCard */}
+          <div className="p-4 space-y-3">
+            {/* Route */}
+            <div className="space-y-2">
+              <div className="flex items-start gap-3">
+                <div className="mt-1.5 w-2.5 h-2.5 rounded-full bg-green-500 shrink-0 ring-2 ring-green-500/30" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Pickup</p>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+                    {pickupDisplay}
+                  </p>
+                </div>
+              </div>
+              <div className="ml-1 w-px h-2 bg-neutral-300 dark:bg-neutral-600" />
+              <div className="flex items-start gap-3">
+                <div className="mt-1.5 w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 ring-2 ring-red-500/30" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Drop-off</p>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+                    {dropoffDisplay}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Info chips row */}
+            <div className="flex flex-wrap gap-1.5">
+              {move?.moveDate && (
+                <span className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full">
+                  {formatDate(move.moveDate)}
+                </span>
+              )}
+              {move?.homeType && (
+                <span className="text-xs px-2 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full font-medium">
+                  {formatLabel(move.homeType)}
+                </span>
+              )}
+              {move?.totalItemCount && move.totalItemCount > 0 && (
+                <span className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full flex items-center gap-1">
+                  <CubeIcon className="w-3 h-3" />
+                  {move.totalItemCount} items
+                </span>
+              )}
+              {move?.crewSize && (
+                <span className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full flex items-center gap-1">
+                  <UserGroupIcon className="w-3 h-3" />
+                  {move.crewSize} movers
+                </span>
+              )}
+              {move?.vehicleType && (
+                <span className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full flex items-center gap-1">
+                  <TruckIcon className="w-3 h-3" />
+                  {formatLabel(move.vehicleType)}
+                </span>
+              )}
+            </div>
+
+            {/* Route distance + duration */}
+            {(move?.routeDistanceMeters || move?.routeDurationSeconds) && (
+              <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+                {move.routeDistanceMeters && (
+                  <span className="flex items-center gap-1">
+                    <MapPinIcon className="w-3.5 h-3.5" />
+                    {formatDistance(move.routeDistanceMeters)}
+                  </span>
+                )}
+                {move.routeDurationSeconds && (
+                  <span className="flex items-center gap-1">
+                    <ClockIcon className="w-3.5 h-3.5" />
+                    ~{formatDuration(move.routeDurationSeconds)}
+                  </span>
+                )}
+              </div>
             )}
-          </button>
+
+            {/* Additional services */}
+            {move?.additionalServices && move.additionalServices.length > 0 && (
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Services: {move.additionalServices.map(formatLabel).join(', ')}
+              </div>
+            )}
+
+            {/* Price — prominent */}
+            {move?.estimatedPrice && move.estimatedPrice > 0 && (
+              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                <span className="text-sm font-medium text-green-700 dark:text-green-300">Your earnings</span>
+                <span className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  €{move.estimatedPrice}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="px-4 pb-4 flex gap-3">
+            <button
+              onClick={handleDecline}
+              disabled={isDeclining}
+              className="flex-1 py-3 px-4 rounded-xl border-2 border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 font-semibold text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
+            >
+              {isDeclining ? 'Declining...' : 'Decline'}
+            </button>
+            <button
+              onClick={handleAccept}
+              disabled={isAccepting}
+              className="flex-[2] py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-green-600/30"
+            >
+              {isAccepting ? (
+                'Accepting...'
+              ) : (
+                <>
+                  <CheckIcon className="w-5 h-5" />
+                  Accept Move
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* CSS animation for the pulsing ring */}
+      <style jsx>{`
+        @keyframes pulse-ring {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        }
+        .animate-pulse-ring {
+          animation: pulse-ring 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }

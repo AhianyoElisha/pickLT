@@ -3,7 +3,7 @@
 import MapboxMap, { RouteInfo } from '@/components/MapboxMap'
 import MapLocationPicker, { PickedLocation } from '@/components/MapLocationPicker'
 import { useMoveSearch, Coordinates } from '@/context/moveSearch'
-import { useMoverTracking } from '@/hooks/useMoverTracking'
+import { useMoverLocationPolling } from '@/hooks/useMoverLocationPolling'
 import { client } from '@/lib/appwrite'
 import type { RealtimeResponseEvent, Models } from 'appwrite'
 import ButtonPrimary from '@/shared/ButtonPrimary'
@@ -22,113 +22,115 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 
-// Mover type from selection page
-interface SelectedMover {
+// ─── Types ──────────────────────────────────────────────
+interface MoverInfo {
   id: string
   name: string
-  profilePhoto: string
+  phone: string | null
+  profilePhoto: string | null
   rating: number
   totalMoves: number
   vehicleType: string
+  vehicleBrand: string
+  vehicleModel: string
   vehicleName: string
   vehiclePlate: string
   crewSize: number
   maxWeight: number
   yearsExperience: number
   languages: string[]
-  responseTime: number
-  baseRate: number
   isVerified: boolean
-  price: number
-  estimatedArrival: number
-  distanceKm: number
-  currentLatitude?: number | null
-  currentLongitude?: number | null
-  routeDistance?: number
-  routeDuration?: number
+  baseRate: number
+  currentLatitude: number | null
+  currentLongitude: number | null
 }
 
-// Fallback mover data if none selected
-const DEFAULT_MOVER: SelectedMover = {
-  id: 'mover-001',
-  name: 'Michael Schmidt',
-  profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces',
-  rating: 4.9,
-  totalMoves: 1247,
-  vehicleType: 'medium_van',
-  vehicleName: 'Mercedes Sprinter',
-  vehiclePlate: 'B-MS 4721',
-  crewSize: 2,
-  maxWeight: 1200,
-  yearsExperience: 8,
-  languages: ['German', 'English'],
-  responseTime: 12,
-  baseRate: 2.20,
-  isVerified: true,
-  price: 89,
-  estimatedArrival: 12,
-  distanceKm: 2.4,
+interface MoveData {
+  $id: string
+  handle: string | null
+  status: string
+  pickupLocation: string | null
+  pickupLatitude: number | null
+  pickupLongitude: number | null
+  dropoffLocation: string | null
+  dropoffLatitude: number | null
+  dropoffLongitude: number | null
+  estimatedPrice: number | null
+  totalItemCount: number | null
+  coverPhotoId: string | null
+  galleryPhotoIds: string[]
+  routeDistanceMeters: number | null
+  routeDurationSeconds: number | null
+  moverProfileId: string | null
 }
 
 type MovePhase = 'mover_arriving' | 'mover_arrived' | 'loading' | 'in_transit' | 'arrived'
 
-// Helper functions for formatting
+// ─── Helpers ────────────────────────────────────────────
 const formatDistance = (meters: number): string => {
-  if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(1)} km`
-  }
+  if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`
   return `${Math.round(meters)} m`
 }
 
 const formatDuration = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.ceil((seconds % 3600) / 60)
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}min`
-  }
+  if (hours > 0) return `${hours}h ${minutes}min`
   return `${minutes} min`
 }
 
 const InstantMovePage = () => {
   const router = useRouter()
-  const {
-    pickupLocation,
-    dropoffLocation,
-    pickupCoordinates,
-    dropoffCoordinates,
-    coverPhoto,
-    inventory,
-    customItems,
-    reset,
-    setPickupLocation,
-    setDropoffLocation,
-    setPickupCoordinates,
-    setDropoffCoordinates,
-  } = useMoveSearch()
+  const { reset } = useMoveSearch()
 
-  // Load selected mover from sessionStorage
-  const [selectedMover, setSelectedMover] = useState<SelectedMover | null>(null)
+  // ─── State: move & mover data from DB ─────────────────
+  const [moveData, setMoveData] = useState<MoveData | null>(null)
+  const [mover, setMover] = useState<MoverInfo | null>(null)
+  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const moveIdRef = useRef<string | null>(null)
+
+  // ─── Fetch move + mover from database on mount ───────
   useEffect(() => {
-    const stored = sessionStorage.getItem('selectedMover')
-    if (stored) {
-      try {
-        setSelectedMover(JSON.parse(stored))
-      } catch {
-        setSelectedMover(DEFAULT_MOVER)
-      }
-    } else {
-      // Redirect back if no mover selected
+    const activeMoveId = sessionStorage.getItem('activeMoveId')
+    if (!activeMoveId) {
       router.push('/instant-move/select-mover')
+      return
     }
+    moveIdRef.current = activeMoveId
+
+    const fetchMoveData = async () => {
+      try {
+        const res = await fetch(`/api/moves/${activeMoveId}/full`)
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Failed to load move data')
+        }
+        const data = await res.json()
+        setMoveData(data.move as MoveData)
+        setMover(data.mover as MoverInfo)
+      } catch (err) {
+        console.error('Failed to fetch move data:', err)
+        setLoadError(err instanceof Error ? err.message : 'Failed to load move')
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchMoveData()
   }, [router])
 
-  // Get the mover to display (selected or default)
-  const mover = selectedMover || DEFAULT_MOVER
+  // Derive coordinates from the move data (from DB)
+  const pickupCoordinates: Coordinates | null = moveData?.pickupLatitude && moveData?.pickupLongitude
+    ? { latitude: moveData.pickupLatitude, longitude: moveData.pickupLongitude }
+    : null
+  const dropoffCoordinates: Coordinates | null = moveData?.dropoffLatitude && moveData?.dropoffLongitude
+    ? { latitude: moveData.dropoffLatitude, longitude: moveData.dropoffLongitude }
+    : null
 
-  // ─── Location picker state ────────────────────────────────
+  // ─── Location picker state ────────────────────────────
   const [locationPickerOpen, setLocationPickerOpen] = useState(false)
   const [editingLocationType, setEditingLocationType] = useState<'pickup' | 'dropoff'>('pickup')
 
@@ -137,56 +139,50 @@ const InstantMovePage = () => {
     setLocationPickerOpen(true)
   }, [])
 
-  const handleLocationPicked = useCallback((location: PickedLocation) => {
-    if (editingLocationType === 'pickup') {
-      setPickupLocation(location.fullAddress)
-      setPickupCoordinates(location.coordinates)
-    } else {
-      setDropoffLocation(location.fullAddress)
-      setDropoffCoordinates(location.coordinates)
-    }
+  const handleLocationPicked = useCallback((location: { fullAddress: string; coordinates: Coordinates }) => {
     setLocationPickerOpen(false)
-  }, [editingLocationType, setPickupLocation, setDropoffLocation, setPickupCoordinates, setDropoffCoordinates])
+  }, [])
 
+  // ─── Phase / route / ETA state ────────────────────────
   const [phase, setPhase] = useState<MovePhase>('mover_arriving')
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null)
   const [moverEtaMinutes, setMoverEtaMinutes] = useState(0)
   const [moverDistanceKm, setMoverDistanceKm] = useState(0)
-
-  // Calculate mover starting position (offset from pickup)
   const [moverCoords, setMoverCoords] = useState<Coordinates | null>(null)
 
-  // Initialize mover position and ETA from selected mover data
+  // Map initial status from DB move to phase
   useEffect(() => {
-    if (selectedMover) {
-      setMoverEtaMinutes(selectedMover.estimatedArrival)
-      setMoverDistanceKm(selectedMover.distanceKm)
+    if (!moveData) return
+    const status = moveData.status
+    switch (status) {
+      case 'mover_assigned':
+      case 'mover_accepted':
+      case 'mover_en_route':
+        setPhase('mover_arriving')
+        break
+      case 'mover_arrived':
+        setPhase('mover_arrived')
+        break
+      case 'loading':
+        setPhase('loading')
+        break
+      case 'in_transit':
+        setPhase('in_transit')
+        break
+      case 'arrived_destination':
+      case 'unloading':
+      case 'completed':
+        setPhase('arrived')
+        break
     }
-  }, [selectedMover])
+  }, [moveData])
 
-  // Initialize mover position from the real DB coordinates (or fall back to offset)
-  useEffect(() => {
-    if (moverCoords) return // already set (e.g. by realtime update)
-    if (selectedMover?.currentLatitude && selectedMover?.currentLongitude) {
-      setMoverCoords({
-        latitude: selectedMover.currentLatitude,
-        longitude: selectedMover.currentLongitude,
-      })
-    } else if (pickupCoordinates) {
-      // Fallback: offset from pickup so the marker is visible somewhere
-      setMoverCoords({
-        latitude: pickupCoordinates.latitude + 0.015,
-        longitude: pickupCoordinates.longitude - 0.02,
-      })
-    }
-  }, [selectedMover, pickupCoordinates, moverCoords])
-
-  // ─── Real-time GPS Tracking via Appwrite Realtime ────────
-  const { lastLocation, isConnected: isTrackingConnected } = useMoverTracking({
-    moverProfileId: selectedMover?.id || null,
-    enabled: phase === 'mover_arriving' || phase === 'in_transit',
+  // ─── Poll mover GPS every 3 seconds from DB ──────────
+  const { lastLocation } = useMoverLocationPolling({
+    moverProfileId: mover?.id || null,
+    enabled: !!mover && (phase === 'mover_arriving' || phase === 'in_transit'),
+    intervalMs: 3000,
     onLocationUpdate: useCallback((location: { latitude: number; longitude: number }) => {
-      // Update mover coordinates from real-time data
       setMoverCoords({
         latitude: location.latitude,
         longitude: location.longitude,
@@ -194,32 +190,28 @@ const InstantMovePage = () => {
     }, []),
   })
 
-  // Update ETA when real-time location changes
+  // Update ETA when polled location changes
   useEffect(() => {
     if (lastLocation && pickupCoordinates && phase === 'mover_arriving') {
-      // Calculate approximate distance from mover to pickup
       const dLat = pickupCoordinates.latitude - lastLocation.latitude
       const dLng = pickupCoordinates.longitude - lastLocation.longitude
-      const approxKm = Math.sqrt(dLat * dLat + dLng * dLng) * 111 // rough km
+      const approxKm = Math.sqrt(dLat * dLat + dLng * dLng) * 111
       setMoverDistanceKm(Math.max(0, approxKm))
-      // Estimate ETA: ~3 min per km in city
       setMoverEtaMinutes(Math.max(1, Math.round(approxKm * 3)))
 
-      // If very close, mark as arrived
       if (approxKm < 0.05) {
         setPhase('mover_arrived')
       }
     }
   }, [lastLocation, pickupCoordinates, phase])
 
-  // Handle route calculation callback
   const handleRouteCalculated = useCallback((info: RouteInfo) => {
     setRouteInfo(info)
   }, [])
 
-  // ─── Subscribe to move & move_request status changes (Appwrite Realtime) ─────
+  // ─── Realtime subscription for move status changes ────
   useEffect(() => {
-    const moveId = sessionStorage.getItem('activeMoveId')
+    const moveId = moveIdRef.current
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID
     const movesColl = process.env.NEXT_PUBLIC_COLLECTION_MOVES
     const moveReqColl = process.env.NEXT_PUBLIC_COLLECTION_MOVE_REQUESTS
@@ -238,8 +230,8 @@ const InstantMovePage = () => {
         const doc = response.payload as Models.Document & Record<string, unknown>
         if (!doc) return
 
-        // Move document update — map Appwrite status to MovePhase
         if (doc.$collectionId === movesColl) {
+          setMoveData((prev) => prev ? { ...prev, ...doc, moverProfileId: prev.moverProfileId } as MoveData : prev)
           const status = doc.status as string
           switch (status) {
             case 'mover_accepted':
@@ -261,22 +253,22 @@ const InstantMovePage = () => {
               setPhase('arrived')
               break
             case 'cancelled_by_mover':
-              // Mover cancelled — go back to select a new mover
               alert('The mover has cancelled. Searching for another mover...')
               router.push('/instant-move/select-mover')
               break
           }
         }
 
-        // Move request update — watch for declined/expired
-        if (doc.$collectionId === moveReqColl && doc.moveId === moveId) {
-          const status = doc.status as string
-          if (status === 'declined' || status === 'expired') {
-            // The mover declined / timed out — redirect to pick another
-            alert('The mover declined your request. Searching for another mover...')
-            sessionStorage.removeItem('activeMoveId')
-            sessionStorage.removeItem('activeMoveRequestId')
-            router.push('/instant-move/select-mover')
+        if (doc.$collectionId === moveReqColl) {
+          const docMoveId = typeof doc.moveId === 'string' ? doc.moveId : (doc.moveId as Record<string, string>)?.$id
+          if (docMoveId === moveId) {
+            const status = doc.status as string
+            if (status === 'declined' || status === 'expired') {
+              alert('The mover declined your request. Searching for another mover...')
+              sessionStorage.removeItem('activeMoveId')
+              sessionStorage.removeItem('activeMoveRequestId')
+              router.push('/instant-move/select-mover')
+            }
           }
         }
       }
@@ -285,44 +277,6 @@ const InstantMovePage = () => {
     return () => unsubscribe()
   }, [router])
 
-    // Compute initials from user's full name
-  const initials = mover?.name
-    ? mover.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '?'
-
-
-  // Fallback: Simulate mover approaching pickup (only when real-time not connected)
-  useEffect(() => {
-    if (phase === 'mover_arriving' && pickupCoordinates && moverCoords && !isTrackingConnected) {
-      const interval = setInterval(() => {
-        setMoverEtaMinutes((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval)
-            setPhase('mover_arrived')
-            return 0
-          }
-          return prev - 1
-        })
-        setMoverDistanceKm((prev) => Math.max(0, prev - 0.2))
-        
-        // Move the mover closer to pickup
-        setMoverCoords((prev) => {
-          if (!prev || !pickupCoordinates) return prev
-          return {
-            latitude: prev.latitude + (pickupCoordinates.latitude - prev.latitude) * 0.15,
-            longitude: prev.longitude + (pickupCoordinates.longitude - prev.longitude) * 0.15,
-          }
-        })
-      }, 3000)
-      return () => clearInterval(interval)
-    }
-  }, [phase, pickupCoordinates, moverCoords, isTrackingConnected])
-
   // Set mover at pickup when arrived
   useEffect(() => {
     if (phase === 'mover_arrived' && pickupCoordinates) {
@@ -330,174 +284,135 @@ const InstantMovePage = () => {
     }
   }, [phase, pickupCoordinates])
 
-  // ─── Cancel confirmation ──────────────────────────────────
+  // ─── Cancel confirmation ──────────────────────────────
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-
   const confirmCancel = () => setShowCancelConfirm(true)
 
   const handleCancel = () => {
     sessionStorage.removeItem('selectedMover')
+    sessionStorage.removeItem('activeMoveId')
+    sessionStorage.removeItem('activeMoveRequestId')
     reset()
     router.push('/')
   }
 
   const handleCallMover = () => {
-    // In production, this would use the actual mover's phone
-    window.open('tel:+491701234567')
+    if (mover?.phone) {
+      window.open(`tel:${mover.phone}`)
+    } else {
+      alert('Mover phone number not available')
+    }
   }
 
   const handleMessageMover = () => {
     alert('Chat feature coming soon!')
   }
-  // Get the total items count
-  const inventoryCount = Object.values(inventory).reduce((sum, qty) => sum + qty, 0) + customItems.length
 
-  const renderMoverCard = () => (
-    <div className="rounded-2xl border border-neutral-200 bg-white/95 backdrop-blur-sm dark:border-neutral-700 dark:bg-neutral-800/95 overflow-hidden shadow-lg">
-      {/* Mover Header */}
-      <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
-        <div className="flex items-start gap-3">
-          <div className="relative shrink-0">
-            <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
-              <Avatar
-                src={mover?.profilePhoto || undefined}
-                initials={!mover?.profilePhoto ? initials : undefined}
-                className=" size-12 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-              />
-            </div>
-            {mover.isVerified && (
-              <div className="absolute -bottom-0.5 -right-0.5 bg-white dark:bg-neutral-800 rounded-full p-0.5">
-                <HugeiconsIcon
-                  icon={CheckmarkCircle02Icon}
-                  size={14}
-                  strokeWidth={1.5}
-                  className="text-green-500"
+  const initials = mover?.name
+    ? mover.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : '?'
+
+  const estimatedPrice = moveData?.estimatedPrice || 0
+  const itemCount = moveData?.totalItemCount || 0
+  const pickupDisplay = moveData?.pickupLocation || 'Pickup location'
+  const dropoffDisplay = moveData?.dropoffLocation || 'Drop-off location'
+
+  const renderMoverCard = () => {
+    if (!mover) return null
+    return (
+      <div className="rounded-2xl border border-neutral-200 bg-white/95 backdrop-blur-sm dark:border-neutral-700 dark:bg-neutral-800/95 overflow-hidden shadow-lg">
+        <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+          <div className="flex items-start gap-3">
+            <div className="relative shrink-0">
+              <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                <Avatar
+                  src={mover.profilePhoto || undefined}
+                  initials={!mover.profilePhoto ? initials : undefined}
+                  className="size-12 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
                 />
+              </div>
+              {mover.isVerified && (
+                <div className="absolute -bottom-0.5 -right-0.5 bg-white dark:bg-neutral-800 rounded-full p-0.5">
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} strokeWidth={1.5} className="text-green-500" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{mover.name}</h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <HugeiconsIcon icon={StarIcon} size={12} strokeWidth={1.5} className="text-amber-500 fill-current" />
+                <span className="text-xs font-medium text-neutral-900 dark:text-white">{mover.rating}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">· {mover.totalMoves} moves</span>
+              </div>
+            </div>
+            {phase === 'mover_arriving' && (
+              <div className="text-right shrink-0">
+                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{moverEtaMinutes} min</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{moverDistanceKm.toFixed(1)} km away</p>
+              </div>
+            )}
+            {phase === 'mover_arrived' && (
+              <div className="text-right shrink-0">
+                <p className="text-lg font-semibold text-primary-600">€{estimatedPrice}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Total price</p>
               </div>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-              {mover.name}
-            </h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <HugeiconsIcon
-                icon={StarIcon}
-                size={12}
-                strokeWidth={1.5}
-                className="text-amber-500 fill-current"
-              />
-              <span className="text-xs font-medium text-neutral-900 dark:text-white">
-                {mover.rating}
-              </span>
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                · {mover.totalMoves} moves
-              </span>
+        </div>
+
+        {phase === 'mover_arrived' && (
+          <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center gap-2">
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} strokeWidth={1.5} className="text-green-500 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">Your mover has arrived!</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Meet them at the pickup location</p>
+              </div>
             </div>
           </div>
-          {/* ETA Badge */}
-          {phase === 'mover_arriving' && (
-            <div className="text-right shrink-0">
-              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
-                {moverEtaMinutes} min
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {moverDistanceKm.toFixed(1)} km away
-              </p>
-            </div>
-          )}
-          {/* Price Badge when arrived */}
-          {phase === 'mover_arrived' && (
-            <div className="text-right shrink-0">
-              <p className="text-lg font-semibold text-primary-600">
-                €{mover.price}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Total price
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+        )}
 
-      {/* Arrived Banner */}
-      {phase === 'mover_arrived' && (
-        <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center gap-2">
-            <HugeiconsIcon
-              icon={CheckmarkCircle02Icon}
-              size={20}
-              strokeWidth={1.5}
-              className="text-green-500 shrink-0"
-            />
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                Your mover has arrived!
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Meet them at the pickup location
-              </p>
-            </div>
+        <div className="p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center shrink-0">
+            <HugeiconsIcon icon={DeliveryTruck01Icon} size={18} strokeWidth={1.5} className="text-neutral-600 dark:text-neutral-300" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-neutral-900 dark:text-white">{mover.vehicleName}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{mover.vehiclePlate}</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <HugeiconsIcon icon={UserMultiple02Icon} size={14} strokeWidth={1.5} />
+            <span>{mover.crewSize} mover{mover.crewSize > 1 ? 's' : ''}</span>
           </div>
         </div>
-      )}
 
-      {/* Vehicle & Crew Info */}
-      <div className="p-4 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center shrink-0">
-          <HugeiconsIcon
-            icon={DeliveryTruck01Icon}
-            size={18}
-            strokeWidth={1.5}
-            className="text-neutral-600 dark:text-neutral-300"
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">
-            {mover.vehicleName}
-          </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {mover.vehiclePlate}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-          <HugeiconsIcon icon={UserMultiple02Icon} size={14} strokeWidth={1.5} />
-          <span>{mover.crewSize} mover{mover.crewSize > 1 ? 's' : ''}</span>
-        </div>
-      </div>
-
-      {/* Items Preview if cover photo exists */}
-      {coverPhoto && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-3 p-2 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl">
-            <Image
-              src={coverPhoto}
-              alt="Items to move"
-              width={48}
-              height={48}
-              className="w-12 h-12 rounded-lg object-cover"
-            />
-            <div className="text-sm">
-              <p className="font-medium text-neutral-900 dark:text-white">{inventoryCount} items</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Ready for pickup</p>
+        {itemCount > 0 && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-3 p-2 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl">
+              <div className="w-12 h-12 rounded-lg bg-neutral-200 dark:bg-neutral-600 flex items-center justify-center">
+                <HugeiconsIcon icon={DeliveryTruck01Icon} size={20} strokeWidth={1.5} className="text-neutral-500" />
+              </div>
+              <div className="text-sm">
+                <p className="font-medium text-neutral-900 dark:text-white">{itemCount} items</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Ready for pickup</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Action Buttons */}
-      <div className="px-4 pb-4 flex gap-2">
-        <ButtonSecondary onClick={handleCallMover} className="flex-1 !py-2">
-          <HugeiconsIcon icon={Call02Icon} size={16} strokeWidth={1.5} className="mr-1.5" />
-          Call
-        </ButtonSecondary>
-        <ButtonSecondary onClick={handleMessageMover} className="flex-1 !py-2">
-          <HugeiconsIcon icon={Message01Icon} size={16} strokeWidth={1.5} className="mr-1.5" />
-          Message
-        </ButtonSecondary>
+        <div className="px-4 pb-4 flex gap-2">
+          <ButtonSecondary onClick={handleCallMover} className="flex-1 !py-2">
+            <HugeiconsIcon icon={Call02Icon} size={16} strokeWidth={1.5} className="mr-1.5" />
+            Call
+          </ButtonSecondary>
+          <ButtonSecondary onClick={handleMessageMover} className="flex-1 !py-2">
+            <HugeiconsIcon icon={Message01Icon} size={16} strokeWidth={1.5} className="mr-1.5" />
+            Message
+          </ButtonSecondary>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderLocationSummary = () => (
     <div className="rounded-2xl border border-neutral-200 bg-white/95 backdrop-blur-sm p-3 dark:border-neutral-700 dark:bg-neutral-800/95 shadow-lg">
@@ -508,72 +423,59 @@ const InstantMovePage = () => {
           <div className="w-2 h-2 rounded-full border-2 border-neutral-900 dark:border-white" />
         </div>
         <div className="flex-1 min-w-0 space-y-2">
-          <button
-            type="button"
-            onClick={() => handleEditLocation('pickup')}
-            className="block w-full text-left rounded-lg -mx-1.5 px-1.5 py-0.5 hover:bg-neutral-100 dark:hover:bg-neutral-700/60 transition"
-          >
+          <div>
             <p className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Pickup</p>
-            <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">
-              {pickupLocation || 'Select pickup location'}
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleEditLocation('dropoff')}
-            className="block w-full text-left rounded-lg -mx-1.5 px-1.5 py-0.5 hover:bg-neutral-100 dark:hover:bg-neutral-700/60 transition"
-          >
+            <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{pickupDisplay}</p>
+          </div>
+          <div>
             <p className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Drop-off</p>
-            <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">
-              {dropoffLocation || 'Select drop-off location'}
-            </p>
-          </button>
+            <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{dropoffDisplay}</p>
+          </div>
         </div>
-        {/* Route info badge */}
         {routeInfo && (
           <div className="shrink-0 text-right">
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-              {formatDistance(routeInfo.distance)}
-            </p>
-            <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
-              {formatDuration(routeInfo.duration)}
-            </p>
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white">{formatDistance(routeInfo.distance)}</p>
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{formatDuration(routeInfo.duration)}</p>
           </div>
         )}
       </div>
     </div>
   )
 
-  // Check if we have valid coordinates
-  const hasValidCoordinates = pickupCoordinates && dropoffCoordinates
-
-  // Show loading state if mover not loaded yet
-  if (!selectedMover) {
+  if (isLoadingData) {
     return (
       <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center p-4">
         <div className="text-center">
           <Logo className="w-24 mx-auto mb-6" />
-          <p className="text-neutral-500 dark:text-neutral-400">Loading...</p>
+          <p className="text-neutral-500 dark:text-neutral-400">Loading move details...</p>
         </div>
       </div>
     )
   }
 
-  // Show error state if no coordinates are available
-  if (!hasValidCoordinates) {
+  if (loadError || !moveData || !mover) {
     return (
       <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center p-4">
         <div className="text-center max-w-sm">
           <Logo className="w-24 mx-auto mb-6" />
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            Missing location details
+            {loadError || 'Move data not found'}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            Please select your pickup and drop-off locations to continue.
-          </p>
-          <ButtonPrimary href="/move-choice" className="w-full">
-            Go back
-          </ButtonPrimary>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-6">Could not load move details from the server.</p>
+          <ButtonPrimary href="/" className="w-full">Go home</ButtonPrimary>
+        </div>
+      </div>
+    )
+  }
+
+  if (!pickupCoordinates || !dropoffCoordinates) {
+    return (
+      <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <Logo className="w-24 mx-auto mb-6" />
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Missing location details</h2>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-6">Please select your pickup and drop-off locations to continue.</p>
+          <ButtonPrimary href="/move-choice" className="w-full">Go back</ButtonPrimary>
         </div>
       </div>
     )
@@ -581,7 +483,6 @@ const InstantMovePage = () => {
 
   return (
     <div className="fixed inset-0 z-40 bg-neutral-100 dark:bg-neutral-900">
-      {/* Full-screen Map */}
       <div className="absolute inset-0">
         <MapboxMap
           pickupCoordinates={pickupCoordinates || undefined}
@@ -593,67 +494,46 @@ const InstantMovePage = () => {
         />
       </div>
 
-      {/* Top Bar - Location Summary & Close Button */}
       <div className="absolute top-0 left-0 right-0 z-10 p-4 pt-4 pointer-events-none">
         <div className="mx-auto max-w-lg flex items-start gap-3">
-          <div className="flex-1 pointer-events-auto">
-            {renderLocationSummary()}
-          </div>
+          <div className="flex-1 pointer-events-auto">{renderLocationSummary()}</div>
           <button
             onClick={confirmCancel}
             className="pointer-events-auto p-2.5 bg-white/95 dark:bg-neutral-800/95 backdrop-blur-sm hover:bg-white dark:hover:bg-neutral-800 rounded-full shadow-lg border border-neutral-200 dark:border-neutral-700 transition"
           >
-            <HugeiconsIcon
-              icon={Cancel01Icon}
-              size={20}
-              strokeWidth={1.5}
-              className="text-neutral-700 dark:text-neutral-300"
-            />
+            <HugeiconsIcon icon={Cancel01Icon} size={20} strokeWidth={1.5} className="text-neutral-700 dark:text-neutral-300" />
           </button>
         </div>
       </div>
 
-      {/* Bottom Panel - Mover Card & Actions */}
       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 pb-4 pointer-events-none">
         <div className="mx-auto max-w-lg space-y-3 pb-2 pointer-events-auto">
           {renderMoverCard()}
-          
-          {/* Action Button */}
           {phase !== 'mover_arrived' ? (
-            <ButtonSecondary onClick={confirmCancel} className="w-full shadow-lg">
-              Cancel move
-            </ButtonSecondary>
+            <ButtonSecondary onClick={confirmCancel} className="w-full shadow-lg">Cancel move</ButtonSecondary>
           ) : (
-            <ButtonPrimary 
-              href={`/checkout?distance=${routeInfo?.distance || selectedMover.routeDistance || 15000}&duration=${routeInfo?.duration || selectedMover.routeDuration || 1800}&price=${mover.price}`} 
+            <ButtonPrimary
+              href={`/checkout?moveId=${moveData.$id}&distance=${routeInfo?.distance || moveData.routeDistanceMeters || 15000}&duration=${routeInfo?.duration || moveData.routeDurationSeconds || 1800}&price=${estimatedPrice}`}
               className="w-full shadow-lg"
             >
-              Proceed to checkout · €{mover.price}
+              Proceed to checkout · €{estimatedPrice}
             </ButtonPrimary>
           )}
         </div>
       </div>
 
-      {/* Cancel Confirmation Modal */}
       {showCancelConfirm && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-neutral-800">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
               <HugeiconsIcon icon={Cancel01Icon} size={24} strokeWidth={1.5} className="text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Cancel this move?
-            </h3>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Cancel this move?</h3>
             <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
               Your mover is already on the way. Are you sure you want to cancel? This action cannot be undone.
             </p>
             <div className="mt-6 flex gap-3">
-              <ButtonSecondary
-                onClick={() => setShowCancelConfirm(false)}
-                className="flex-1"
-              >
-                Keep move
-              </ButtonSecondary>
+              <ButtonSecondary onClick={() => setShowCancelConfirm(false)} className="flex-1">Keep move</ButtonSecondary>
               <button
                 type="button"
                 onClick={handleCancel}
@@ -666,14 +546,11 @@ const InstantMovePage = () => {
         </div>
       )}
 
-      {/* Location Picker Overlay */}
       <MapLocationPicker
         open={locationPickerOpen}
         onClose={() => setLocationPickerOpen(false)}
         onSelect={handleLocationPicked}
-        initialCoordinates={
-          editingLocationType === 'pickup' ? pickupCoordinates : dropoffCoordinates
-        }
+        initialCoordinates={editingLocationType === 'pickup' ? pickupCoordinates : dropoffCoordinates}
         label={editingLocationType === 'pickup' ? 'Edit pickup location' : 'Edit drop-off location'}
       />
     </div>
